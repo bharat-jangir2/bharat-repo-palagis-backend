@@ -37,9 +37,6 @@ export class Truck {
   @Prop({ default: false })
   isOnline: boolean;
 
-  @Prop({ type: Types.ObjectId, ref: 'Driver', default: null })
-  currentDriver?: Types.ObjectId;
-
   @Prop({ default: false })
   isDeleted: boolean;
 

@@ -32,13 +32,25 @@ export class AdminDriverController {
   async getAllDrivers(
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.driverService.findAll(paginationDto.page, paginationDto.limit);
+     const drivers = await this.driverService.findAll(paginationDto.page, paginationDto.limit);
+     return {
+      ...drivers,
+      userMessage: '',
+      userMessageCode: 'DRIVERS_FETCHED',
+      developerMessage: `Drivers fetched successfully`,
+    };
   }
 
   @Get(':id')
   @Version('1')
   async getDriver(@Param('id') id: string) {
-    return this.driverService.findOne(id);
+    const driver = await this.driverService.findOne(id);
+    return {
+      ...driver,
+      userMessage: 'Driver fetched successfully',
+      userMessageCode: 'DRIVER_FETCHED',
+      developerMessage: `Driver fetched successfully`,
+    };
   }
 
   @Put(':id')
@@ -47,13 +59,23 @@ export class AdminDriverController {
     @Param('id') id: string,
     @Body() updateDriverDto: UpdateDriverDto,
   ) {
-    return this.driverService.update(id, updateDriverDto);
+    const driver = await this.driverService.update(id, updateDriverDto);
+    return {
+      ...driver,
+      userMessage: 'Driver updated successfully',
+      userMessageCode: 'DRIVER_UPDATED',
+      developerMessage: `Driver updated successfully`,
+    };
   }
 
   @Delete(':id')
   @Version('1')
   async deleteDriver(@Param('id') id: string) {
     await this.driverService.remove(id);
-    return { message: 'Driver deleted successfully' };
+    return {
+      userMessage: 'Driver deleted successfully',
+      userMessageCode: 'DRIVER_DELETED',
+      developerMessage: `Driver deleted successfully`,
+    };
   }
 }

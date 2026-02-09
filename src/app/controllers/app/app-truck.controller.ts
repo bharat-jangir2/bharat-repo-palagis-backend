@@ -21,7 +21,7 @@ export class AppTruckController {
     return this.truckService.findAll(paginationDto.page, paginationDto.limit);
   }
 
-  @Get('near')
+  @Get('nearby')
   @Version('1')
   async getTrucksNear(
     @Query() findNearDto: FindNearDto,

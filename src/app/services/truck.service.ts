@@ -46,7 +46,6 @@ export class TruckService {
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isOnline: 1,
-          currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -78,7 +77,6 @@ export class TruckService {
                 truckName: 1,
                 location: 1,
                 isOnline: 1,
-                currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
                 isDeleted: 1,
                 createdAt: 1,
                 updatedAt: 1,
@@ -114,7 +112,6 @@ export class TruckService {
           truckName: 1,
           location: 1,
           isOnline: 1,
-          currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -160,7 +157,6 @@ export class TruckService {
           truckName: 1,
           location: 1,
           isOnline: 1,
-          currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -184,7 +180,6 @@ export class TruckService {
     // Soft delete - mark as deleted instead of removing
     await this.truckModel.findByIdAndUpdate(id, {
       isDeleted: true,
-      currentDriver: null, // Clear driver reference when truck is deleted
     }).exec();
   }
 
@@ -205,15 +200,11 @@ export class TruckService {
       { $match: { isDeleted: false } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
-          latitude: { $arrayElemAt: ['$location.coordinates', 1] },
-          longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isOnline: 1,
-          currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,

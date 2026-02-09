@@ -29,7 +29,7 @@ export class ResponseTransformInterceptor implements NestInterceptor {
         let dataWithoutMessages = data;
 
         if (data && typeof data === 'object' && !Array.isArray(data)) {
-          // Extract custom messages if present
+          // Extract custom messages if present (allow empty strings)
           if ('userMessage' in data) {
             customUserMessage = data.userMessage;
           }
@@ -40,18 +40,18 @@ export class ResponseTransformInterceptor implements NestInterceptor {
             customDeveloperMessage = data.developerMessage;
           }
 
-          // Remove custom message fields from data
-          if (customUserMessage || customUserMessageCode || customDeveloperMessage) {
+          // Remove custom message fields from data if they exist (even if empty string)
+          if ('userMessage' in data || 'userMessageCode' in data || 'developerMessage' in data) {
             const { userMessage, userMessageCode, developerMessage, ...rest } = data;
             dataWithoutMessages = rest;
           }
         }
 
-        // Use custom messages if provided, otherwise generate default
+        // Use custom messages if provided (including empty strings), otherwise generate default
         const defaultMessages = this.getMessage(statusCode, request.method, data);
-        const userMessage = customUserMessage || defaultMessages.userMessage;
-        const userMessageCode = customUserMessageCode || defaultMessages.userMessageCode;
-        const developerMessage = customDeveloperMessage || defaultMessages.developerMessage;
+        const userMessage = customUserMessage !== undefined ? customUserMessage : defaultMessages.userMessage;
+        const userMessageCode = customUserMessageCode !== undefined ? customUserMessageCode : defaultMessages.userMessageCode;
+        const developerMessage = customDeveloperMessage !== undefined ? customDeveloperMessage : defaultMessages.developerMessage;
 
         const standardResponse: StandardResponse = {
           logId,

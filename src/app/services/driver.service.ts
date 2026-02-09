@@ -38,9 +38,14 @@ export class DriverService {
       throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
     }
 
-    // Check if truck already has a driver assigned
-    if (truck.currentDriver) {
-      throw new ConflictException('This truck already has a driver assigned');
+    // Check if truck is already assigned to another non-deleted driver
+    const existingDriverForTruck = await this.driverModel.findOne({
+      truckId: new Types.ObjectId(createDriverDto.truckId),
+      isDeleted: false,
+    }).exec();
+
+    if (existingDriverForTruck) {
+      throw new ConflictException('This truck is already assigned to another driver');
     }
 
     // Create driver
@@ -50,17 +55,11 @@ export class DriverService {
       isDeleted: false,
     });
 
-    // Update truck with current driver reference
-    await this.truckModel.findByIdAndUpdate(createDriverDto.truckId, {
-      currentDriver: createdDriver._id,
-    }).exec();
-
     const result = await this.driverModel.aggregate([
       { $match: { _id: createdDriver._id } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           firstName: 1,
           lastName: 1,
           email: 1,
@@ -96,8 +95,7 @@ export class DriverService {
             { $limit: limitNumber },
             {
               $project: {
-                _id: 0,
-                id: { $toString: '$_id' },
+                _id: 1,
                 firstName: 1,
                 lastName: 1,
                 email: 1,
@@ -108,7 +106,7 @@ export class DriverService {
                 isActive: 1,
                 isDeleted: 1,
                 createdAt: 1,
-                updatedAt: 1,
+                updatedAt: 1, 
               },
             },
           ],
@@ -136,8 +134,7 @@ export class DriverService {
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           firstName: 1,
           lastName: 1,
           email: 1,
@@ -171,27 +168,16 @@ export class DriverService {
         throw new NotFoundException(`Truck with ID ${updateDriverDto.truckId} not found`);
       }
 
-      // Get current driver to update old truck
-      const currentDriver = await this.driverModel.findOne({ 
-        _id: id, 
-        isDeleted: false 
+      // Check if new truck is already assigned to another non-deleted driver (excluding current driver)
+      const existingDriverForTruck = await this.driverModel.findOne({
+        truckId: new Types.ObjectId(updateDriverDto.truckId),
+        isDeleted: false,
+        _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
       }).exec();
-      if (currentDriver && currentDriver.truckId) {
-        // Remove driver from old truck
-        await this.truckModel.findByIdAndUpdate(currentDriver.truckId, {
-          currentDriver: null,
-        }).exec();
-      }
 
-      // Check if new truck already has a driver
-      if (truck.currentDriver) {
-        throw new ConflictException('This truck already has a driver assigned');
+      if (existingDriverForTruck) {
+        throw new ConflictException('This truck is already assigned to another driver');
       }
-
-      // Update new truck with driver reference
-      await this.truckModel.findByIdAndUpdate(updateDriverDto.truckId, {
-        currentDriver: new Types.ObjectId(id),
-      }).exec();
     }
 
     const driver = await this.driverModel.findOneAndUpdate(
@@ -211,8 +197,7 @@ export class DriverService {
       { $match: { _id: driver._id } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           firstName: 1,
           lastName: 1,
           email: 1,
@@ -246,12 +231,6 @@ export class DriverService {
       isDeleted: true,
     }).exec();
 
-    // Remove driver reference from truck
-    if (driver.truckId) {
-      await this.truckModel.findByIdAndUpdate(driver.truckId, {
-        currentDriver: null,
-      }).exec();
-    }
   }
 
 }
