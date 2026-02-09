@@ -4,7 +4,6 @@ import { Model, Types } from 'mongoose';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
 import { Driver, DriverDocument } from '../entities/driver.entity';
-import { DriverResponseDto } from '../dtos/driver-response.dto';
 import { Truck, TruckDocument } from '../entities/truck.entity';
 
 @Injectable()
@@ -14,7 +13,7 @@ export class DriverService {
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
   ) {}
 
-  async create(createDriverDto: CreateDriverDto): Promise<DriverResponseDto> {
+  async create(createDriverDto: CreateDriverDto) {
     // Check if driver with same email, phone, or license already exists
     const existingDriver = await this.driverModel.findOne({
       $or: [
@@ -60,6 +59,7 @@ export class DriverService {
       { $match: { _id: createdDriver._id } },
       {
         $project: {
+          _id: 0,
           id: { $toString: '$_id' },
           firstName: 1,
           lastName: 1,
@@ -76,36 +76,67 @@ export class DriverService {
       },
     ]);
 
-    return result[0] as DriverResponseDto;
+    return result[0];
   }
 
-  async findAll(): Promise<DriverResponseDto[]> {
-    return this.driverModel.aggregate([
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const result = await this.driverModel.aggregate([
       { $match: { isDeleted: false } },
       {
-        $project: {
-          id: { $toString: '$_id' },
-          firstName: 1,
-          lastName: 1,
-          email: 1,
-          phone: 1,
-          licenseNumber: 1,
-          address: 1,
-          truckId: { $toString: '$truckId' },
-          isActive: 1,
-          isDeleted: 1,
-          createdAt: 1,
-          updatedAt: 1,
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limitNumber },
+            {
+              $project: {
+                _id: 0,
+                id: { $toString: '$_id' },
+                firstName: 1,
+                lastName: 1,
+                email: 1,
+                phone: 1,
+                licenseNumber: 1,
+                address: 1,
+                truckId: { $toString: '$truckId' },
+                isActive: 1,
+                isDeleted: 1,
+                createdAt: 1,
+                updatedAt: 1,
+              },
+            },
+          ],
+          total: [{ $count: 'count' }],
         },
       },
     ]);
+
+    const totalItems = result[0]?.total[0]?.count || 0;
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    return {
+      result: result[0]?.data || [],
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalItems,
+        totalPages,
+      },
+    };
   }
 
-  async findOne(id: string): Promise<DriverResponseDto> {
+  async findOne(id: string) {
     const result = await this.driverModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
       {
         $project: {
+          _id: 0,
           id: { $toString: '$_id' },
           firstName: 1,
           lastName: 1,
@@ -126,10 +157,10 @@ export class DriverService {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
 
-    return result[0] as DriverResponseDto;
+    return result[0];
   }
 
-  async update(id: string, updateDriverDto: UpdateDriverDto): Promise<DriverResponseDto> {
+  async update(id: string, updateDriverDto: UpdateDriverDto) {
     // If truckId is being updated, validate it
     if (updateDriverDto.truckId) {
       const truck = await this.truckModel.findOne({ 
@@ -180,6 +211,7 @@ export class DriverService {
       { $match: { _id: driver._id } },
       {
         $project: {
+          _id: 0,
           id: { $toString: '$_id' },
           firstName: 1,
           lastName: 1,
@@ -196,7 +228,7 @@ export class DriverService {
       },
     ]);
 
-    return result[0] as DriverResponseDto;
+    return result[0];
   }
 
   async remove(id: string): Promise<void> {

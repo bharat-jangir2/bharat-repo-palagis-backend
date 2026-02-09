@@ -2,10 +2,11 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Version,
 } from '@nestjs/common';
 import { DriverService } from '../../services/driver.service';
-import { DriverResponseDto } from '../../dtos/driver-response.dto';
+import { PaginationDto } from '../../dtos/pagination.dto';
 
 @Controller('app/drivers')
 export class AppDriverController {
@@ -13,13 +14,15 @@ export class AppDriverController {
 
   @Get()
   @Version('1')
-  async getAllDrivers(): Promise<DriverResponseDto[]> {
-    return this.driverService.findAll();
+  async getAllDrivers(
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.driverService.findAll(paginationDto.page, paginationDto.limit);
   }
 
   @Get(':id')
   @Version('1')
-  async getDriver(@Param('id') id: string): Promise<DriverResponseDto> {
+  async getDriver(@Param('id') id: string) {
     return this.driverService.findOne(id);
   }
 }

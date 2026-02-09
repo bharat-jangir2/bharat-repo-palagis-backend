@@ -4,7 +4,6 @@ import { Model, Types } from 'mongoose';
 import { CreateTruckDto } from '../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../dtos/update-truck.dto';
 import { Truck, TruckDocument } from '../entities/truck.entity';
-import { TruckResponseDto } from '../dtos/truck-response.dto';
 
 @Injectable()
 export class TruckService {
@@ -12,7 +11,7 @@ export class TruckService {
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
   ) {}
 
-  async create(createTruckDto: CreateTruckDto): Promise<TruckResponseDto> {
+  async create(createTruckDto: CreateTruckDto) {
     const existingTruck = await this.truckModel.findOne({
       vehicleNumber: createTruckDto.vehicleNumber,
       isDeleted: false,
@@ -55,13 +54,13 @@ export class TruckService {
       },
     ]);
 
-    return result[0] as TruckResponseDto;
+    return result[0];
   }
 
   async findAll(
     page: number = 1,
     limit: number = 10,
-  ): Promise<{ result: TruckResponseDto[]; pagination: { page: number; limit: number; totalItems: number; totalPages: number } }> {
+  ) {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
@@ -75,12 +74,9 @@ export class TruckService {
             { $limit: limitNumber },
             {
               $project: {
-                id: { $toString: '$_id' },
                 vehicleNumber: 1,
                 truckName: 1,
                 location: 1,
-                latitude: { $arrayElemAt: ['$location.coordinates', 1] },
-                longitude: { $arrayElemAt: ['$location.coordinates', 0] },
                 isOnline: 1,
                 currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
                 isDeleted: 1,
@@ -108,18 +104,15 @@ export class TruckService {
     };
   }
 
-  async findOne(id: string): Promise<TruckResponseDto> {
+  async findOne(id: string) {
     const result = await this.truckModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
-          latitude: { $arrayElemAt: ['$location.coordinates', 1] },
-          longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isOnline: 1,
           currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
@@ -133,10 +126,10 @@ export class TruckService {
       throw new NotFoundException(`Truck with ID ${id} not found`);
     }
 
-    return result[0] as TruckResponseDto;
+    return result[0];
   }
 
-  async update(id: string, updateTruckDto: UpdateTruckDto): Promise<TruckResponseDto> {
+  async update(id: string, updateTruckDto: UpdateTruckDto) {
     const updateData: any = { ...updateTruckDto };
     
     // Handle location update if coordinates provided
@@ -162,13 +155,10 @@ export class TruckService {
       { $match: { _id: truck._id } },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
-          latitude: { $arrayElemAt: ['$location.coordinates', 1] },
-          longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isOnline: 1,
           currentDriver: { $ifNull: [{ $toString: '$currentDriver' }, null] },
           isDeleted: 1,
@@ -178,7 +168,7 @@ export class TruckService {
       },
     ]);
 
-    return result[0] as TruckResponseDto;
+    return result[0];
   }
 
   async remove(id: string): Promise<void> {
@@ -199,7 +189,7 @@ export class TruckService {
   }
 
   // Find trucks near a location (for proximity queries)
-  async findNear(longitude: number, latitude: number, maxDistance: number = 10000): Promise<TruckResponseDto[]> {
+  async findNear(longitude: number, latitude: number, maxDistance: number = 10000) {
     return this.truckModel.aggregate([
       {
         $geoNear: {

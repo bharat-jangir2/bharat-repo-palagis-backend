@@ -6,7 +6,8 @@ import {
   Version,
 } from '@nestjs/common';
 import { TruckService } from '../../services/truck.service';
-import { TruckResponseDto } from '../../dtos/truck-response.dto';
+import { PaginationDto } from '../../dtos/pagination.dto';
+import { FindNearDto } from '../../dtos/find-near.dto';
 
 @Controller('app/trucks')
 export class AppTruckController {
@@ -15,29 +16,26 @@ export class AppTruckController {
   @Get()
   @Version('1')
   async getAllTrucks(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ): Promise<{ result: TruckResponseDto[]; pagination: { page: number; limit: number; totalItems: number; totalPages: number } }> {
-    return this.truckService.findAll(page, limit);
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.truckService.findAll(paginationDto.page, paginationDto.limit);
   }
 
   @Get('near')
   @Version('1')
   async getTrucksNear(
-    @Query('longitude') longitude: number,
-    @Query('latitude') latitude: number,
-    @Query('maxDistance') maxDistance?: number,
-  ): Promise<TruckResponseDto[]> {
+    @Query() findNearDto: FindNearDto,
+  ) {
     return this.truckService.findNear(
-      Number(longitude),
-      Number(latitude),
-      maxDistance ? Number(maxDistance) : 10000,
+      findNearDto.longitude,
+      findNearDto.latitude,
+      findNearDto.maxDistance,
     );
   }
 
   @Get(':id')
   @Version('1')
-  async getTruck(@Param('id') id: string): Promise<TruckResponseDto> {
+  async getTruck(@Param('id') id: string) {
     return this.truckService.findOne(id);
   }
 }

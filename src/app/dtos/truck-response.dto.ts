@@ -6,8 +6,6 @@ export class TruckResponseDto {
     type: string;
     coordinates: [number, number]; // [longitude, latitude]
   };
-  latitude?: number;
-  longitude?: number;
   isOnline: boolean;
   currentDriver?: string;
   isDeleted: boolean;

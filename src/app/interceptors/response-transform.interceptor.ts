@@ -22,8 +22,36 @@ export class ResponseTransformInterceptor implements NestInterceptor {
         const statusCode = response.statusCode || HttpStatus.OK;
         const success = statusCode >= 200 && statusCode < 300;
 
-        const { userMessage, userMessageCode, developerMessage } =
-          this.getMessage(statusCode, request.method, data);
+        // Check if data contains custom messages
+        let customUserMessage: string | undefined;
+        let customUserMessageCode: string | undefined;
+        let customDeveloperMessage: string | undefined;
+        let dataWithoutMessages = data;
+
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Extract custom messages if present
+          if ('userMessage' in data) {
+            customUserMessage = data.userMessage;
+          }
+          if ('userMessageCode' in data) {
+            customUserMessageCode = data.userMessageCode;
+          }
+          if ('developerMessage' in data) {
+            customDeveloperMessage = data.developerMessage;
+          }
+
+          // Remove custom message fields from data
+          if (customUserMessage || customUserMessageCode || customDeveloperMessage) {
+            const { userMessage, userMessageCode, developerMessage, ...rest } = data;
+            dataWithoutMessages = rest;
+          }
+        }
+
+        // Use custom messages if provided, otherwise generate default
+        const defaultMessages = this.getMessage(statusCode, request.method, data);
+        const userMessage = customUserMessage || defaultMessages.userMessage;
+        const userMessageCode = customUserMessageCode || defaultMessages.userMessageCode;
+        const developerMessage = customDeveloperMessage || defaultMessages.developerMessage;
 
         const standardResponse: StandardResponse = {
           logId,
@@ -34,37 +62,37 @@ export class ResponseTransformInterceptor implements NestInterceptor {
           developerMessage,
         };
 
-        if (data === null || data === undefined) {
+        if (dataWithoutMessages === null || dataWithoutMessages === undefined) {
           return standardResponse;
         }
 
         // Handle pagination structure: page, limit, totalItems, totalPages
-        if (Array.isArray(data)) {
+        if (Array.isArray(dataWithoutMessages)) {
           standardResponse.data = {
-            result: data,
+            result: dataWithoutMessages,
           };
-        } else if (data && typeof data === 'object') {
+        } else if (dataWithoutMessages && typeof dataWithoutMessages === 'object') {
           // If data has pagination info, extract it
-          if (data.pagination || data.result) {
+          if (dataWithoutMessages.pagination || dataWithoutMessages.result) {
             standardResponse.data = {
-              result: data.result || data,
+              result: dataWithoutMessages.result || dataWithoutMessages,
               pagination: {
-                page: data.pagination?.page || 1,
-                limit: data.pagination?.limit || data.pagination?.perPage || 10,
-                totalItems: data.pagination?.totalItems || data.pagination?.total || 0,
-                totalPages: data.pagination?.totalPages || 
-                  Math.ceil((data.pagination?.totalItems || data.pagination?.total || 0) / 
-                           (data.pagination?.limit || data.pagination?.perPage || 10)),
+                page: dataWithoutMessages.pagination?.page || 1,
+                limit: dataWithoutMessages.pagination?.limit || dataWithoutMessages.pagination?.perPage || 10,
+                totalItems: dataWithoutMessages.pagination?.totalItems || dataWithoutMessages.pagination?.total || 0,
+                totalPages: dataWithoutMessages.pagination?.totalPages || 
+                  Math.ceil((dataWithoutMessages.pagination?.totalItems || dataWithoutMessages.pagination?.total || 0) / 
+                           (dataWithoutMessages.pagination?.limit || dataWithoutMessages.pagination?.perPage || 10)),
               },
             };
           } else {
             standardResponse.data = {
-              result: data,
+              result: dataWithoutMessages,
             };
           }
         } else {
           standardResponse.data = {
-            result: data,
+            result: dataWithoutMessages,
           };
         }
 
@@ -101,6 +129,10 @@ export class ResponseTransformInterceptor implements NestInterceptor {
         userMessage = 'Resource updated successfully';
         userMessageCode = 'UPDATED';
         developerMessage = 'Resource has been updated';
+      } else if (method === 'DELETE') {
+        userMessage = 'Resource deleted successfully';
+        userMessageCode = 'DELETED';
+        developerMessage = 'Resource has been deleted';
       } else if (method === 'GET') {
         if (Array.isArray(data)) {
           userMessage = 'Resources fetched successfully';
