@@ -5,6 +5,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import databaseConfig from './app/config/database.config';
+import firebaseConfig from './app/config/firebase.config';
 import { AppController } from './app/controllers/app/app.controller';
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
@@ -19,6 +20,7 @@ import { Driver, DriverSchema } from './app/entities/driver.entity';
 import { LoggerEntity, LoggerSchema, LoggerCollectionName } from './app/entities/logger.entity';
 import { LoggingInterceptor } from './app/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './app/interceptors/response-transform.interceptor';
+import { NotificationsModule } from './app/notifications/notifications.module';
 
 const logger = new Logger('Database');
 
@@ -26,8 +28,8 @@ const logger = new Logger('Database');
   imports: [
     // Environment configuration
     ConfigModule.forRoot({
-      isGlobal: true,
-      load: [databaseConfig],
+      isGlobal: true, 
+      load: [databaseConfig, firebaseConfig],
       cache: true,
       // Use single .env file
       envFilePath: '.env',
@@ -58,6 +60,8 @@ const logger = new Logger('Database');
       { name: Driver.name, schema: DriverSchema },
       { name: LoggerEntity.name, schema: LoggerSchema, collection: LoggerCollectionName },
     ]),
+    // Firebase / Notifications
+    NotificationsModule,
   ],
   controllers: [
     // App Controllers (Mobile App - Read-only)
