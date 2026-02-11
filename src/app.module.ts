@@ -5,6 +5,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
+import { ScheduleModule } from '@nestjs/schedule';
 import databaseConfig from './app/config/database.config';
 import firebaseConfig from './app/config/firebase.config';
 import jwtConfig from './app/config/jwt.config';
@@ -48,6 +49,9 @@ const logger = new Logger('Database');
 
     // Passport JWT Strategy
     PassportModule.register({ defaultStrategy: 'jwt' }),
+
+    // Schedule Module for Cron Jobs
+    ScheduleModule.forRoot(),
 
     // MongoDB connection - Async setup with ConfigService
     MongooseModule.forRootAsync({
