@@ -4,11 +4,13 @@ import { Model, Types } from 'mongoose';
 import { CreateTruckDto } from '../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../dtos/update-truck.dto';
 import { Truck, TruckDocument } from '../entities/truck.entity';
+import { CounterService } from './counter.service';
 
 @Injectable()
 export class TruckService {
   constructor(
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
+    private counterService: CounterService,
   ) {}
 
   async create(createTruckDto: CreateTruckDto) {
@@ -21,7 +23,11 @@ export class TruckService {
       throw new ConflictException('Truck with this vehicle number already exists');
     }
 
+    // Generate auto-incrementing truck code
+    const truckCode = await this.counterService.getNextTruckCode();
+
     const truckData = {
+      truckCode,
       vehicleNumber: createTruckDto.vehicleNumber,
       truckName: createTruckDto.truckName,
       location: {
@@ -40,6 +46,7 @@ export class TruckService {
         $project: {
           _id: 0,
           id: { $toString: '$_id' },
+          truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
@@ -73,6 +80,7 @@ export class TruckService {
             { $limit: limitNumber },
             {
               $project: {
+                truckCode: 1,
                 vehicleNumber: 1,
                 truckName: 1,
                 location: 1,
@@ -108,6 +116,7 @@ export class TruckService {
       {
         $project: {
           _id: 1,
+          truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
@@ -128,6 +137,9 @@ export class TruckService {
 
   async update(id: string, updateTruckDto: UpdateTruckDto) {
     const updateData: any = { ...updateTruckDto };
+    
+    // Remove truckCode from update data (it should not be updated)
+    delete updateData.truckCode;
     
     // Handle location update if coordinates provided
     if (updateTruckDto.coordinates) {
@@ -153,6 +165,7 @@ export class TruckService {
       {
         $project: {
           _id: 1,
+          truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,
@@ -201,6 +214,7 @@ export class TruckService {
       {
         $project: {
           _id: 1,
+          truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
           location: 1,

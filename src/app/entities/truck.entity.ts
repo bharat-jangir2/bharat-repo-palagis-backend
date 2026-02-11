@@ -10,6 +10,9 @@ export type TruckDocument = Truck & Document;
 })
 export class Truck {
   @Prop({ required: true, unique: true })
+  truckCode: string; // Auto-generated: T-0001, T-0002, etc.
+
+  @Prop({ required: true, unique: true })
   vehicleNumber: string;
 
   @Prop({ required: true })
@@ -50,6 +53,7 @@ export const TruckSchema = SchemaFactory.createForClass(Truck);
 TruckSchema.index({ location: '2dsphere' });
 // Index for soft delete queries
 TruckSchema.index({ isDeleted: 1 });
+// truckCode index is automatically created by unique: true
 
 // VIRTUALS: Allow using truck.latitude and truck.longitude
 TruckSchema.virtual('latitude').get(function() {

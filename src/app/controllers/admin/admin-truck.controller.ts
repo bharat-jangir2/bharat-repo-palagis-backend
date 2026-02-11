@@ -15,6 +15,7 @@ import { TruckService } from '../../services/truck.service';
 import { CreateTruckDto } from '../../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../../dtos/update-truck.dto';
 import { PaginationDto } from '../../dtos/pagination.dto';
+import { Public } from 'src/app/decorators/public.decorator';
 
 @Controller('admin/trucks')
 export class AdminTruckController {
@@ -23,6 +24,7 @@ export class AdminTruckController {
   @Post()
   @Version('1')
   @HttpCode(HttpStatus.CREATED)
+  @Public()
   async createTruck(@Body() createTruckDto: CreateTruckDto) {
     const truck = await this.truckService.create(createTruckDto);
     return {

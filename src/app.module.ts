@@ -21,12 +21,14 @@ import { Truck, TruckSchema } from './app/entities/truck.entity';
 import { Driver, DriverSchema } from './app/entities/driver.entity';
 import { LoggerEntity, LoggerSchema, LoggerCollectionName } from './app/entities/logger.entity';
 import { Token, TokenSchema } from './app/entities/token.entity';
+import { Counter, CounterSchema } from './app/entities/counter.entity';
 import { LoggingInterceptor } from './app/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './app/interceptors/response-transform.interceptor';
 import { NotificationsModule } from './app/notifications/notifications.module';
 import { JwtStrategy } from './app/strategies/jwt.strategy';
 import { AuthService } from './app/services/auth.service';
 import { TokenService } from './app/services/token.service';
+import { CounterService } from './app/services/counter.service';
 import { JwtAuthGuard } from './app/guards/jwt-auth.guard';
 import { AuthController } from './app/controllers/auth.controller';
 
@@ -71,6 +73,7 @@ const logger = new Logger('Database');
       { name: Driver.name, schema: DriverSchema },
       { name: LoggerEntity.name, schema: LoggerSchema, collection: LoggerCollectionName },
       { name: Token.name, schema: TokenSchema },
+      { name: Counter.name, schema: CounterSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
@@ -89,6 +92,7 @@ const logger = new Logger('Database');
   providers: [
     AppService,
     TruckService,
+    CounterService,
     DriverService,
     LoggerService,
     // Auth providers
