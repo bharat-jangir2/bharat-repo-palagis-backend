@@ -3,9 +3,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { PassportModule } from '@nestjs/passport';
 import databaseConfig from './app/config/database.config';
 import firebaseConfig from './app/config/firebase.config';
+import jwtConfig from './app/config/jwt.config';
 import { AppController } from './app/controllers/app/app.controller';
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
@@ -18,9 +20,15 @@ import { LoggerService } from './app/services/logger.service';
 import { Truck, TruckSchema } from './app/entities/truck.entity';
 import { Driver, DriverSchema } from './app/entities/driver.entity';
 import { LoggerEntity, LoggerSchema, LoggerCollectionName } from './app/entities/logger.entity';
+import { Token, TokenSchema } from './app/entities/token.entity';
 import { LoggingInterceptor } from './app/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './app/interceptors/response-transform.interceptor';
 import { NotificationsModule } from './app/notifications/notifications.module';
+import { JwtStrategy } from './app/strategies/jwt.strategy';
+import { AuthService } from './app/services/auth.service';
+import { TokenService } from './app/services/token.service';
+import { JwtAuthGuard } from './app/guards/jwt-auth.guard';
+import { AuthController } from './app/controllers/auth.controller';
 
 const logger = new Logger('Database');
 
@@ -29,12 +37,15 @@ const logger = new Logger('Database');
     // Environment configuration
     ConfigModule.forRoot({
       isGlobal: true, 
-      load: [databaseConfig, firebaseConfig],
+      load: [databaseConfig, firebaseConfig, jwtConfig],
       cache: true,
       // Use single .env file
       envFilePath: '.env',
       ignoreEnvFile: false,
     }),
+
+    // Passport JWT Strategy
+    PassportModule.register({ defaultStrategy: 'jwt' }),
 
     // MongoDB connection - Async setup with ConfigService
     MongooseModule.forRootAsync({
@@ -59,11 +70,14 @@ const logger = new Logger('Database');
       { name: Truck.name, schema: TruckSchema },
       { name: Driver.name, schema: DriverSchema },
       { name: LoggerEntity.name, schema: LoggerSchema, collection: LoggerCollectionName },
+      { name: Token.name, schema: TokenSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
   ],
   controllers: [
+    // Auth Controller
+    AuthController,
     // App Controllers (Mobile App - Read-only)
     AppController,
     AppTruckController,
@@ -77,6 +91,15 @@ const logger = new Logger('Database');
     TruckService,
     DriverService,
     LoggerService,
+    // Auth providers
+    JwtStrategy,
+    AuthService,
+    TokenService,
+    JwtAuthGuard,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
