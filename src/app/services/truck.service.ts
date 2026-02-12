@@ -150,11 +150,16 @@ export class TruckService {
       delete updateData.coordinates;
     }
 
-    const truck = await this.truckModel.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      updateData,
-      { new: true, runValidators: true },
-    ).exec();
+    const truck = await this.truckModel
+      .findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        updateData,
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      )
+      .exec();
 
     if (!truck) {
       throw new NotFoundException(`Truck with ID ${id} not found`);

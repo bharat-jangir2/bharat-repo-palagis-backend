@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dtos/login.dto';
 import { RefreshTokenDto } from '../dtos/refresh-token.dto';
@@ -12,6 +20,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(
       loginDto.deviceId,
@@ -21,6 +30,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(
       refreshTokenDto.refreshToken,
@@ -30,8 +40,13 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   async logout(@Request() req) {
     await this.authService.logout(req.user.deviceId);
-    return { message: 'Logged out successfully' };
+    return {
+      userMessage: 'Logged out successfully',
+      userMessageCode: 'LOGOUT_SUCCESS',
+      developerMessage: 'Logged out successfully',
+    };
   }
 }

@@ -19,6 +19,8 @@ export class LoggerService {
     logId: string,
     updateData: Partial<LoggerEntity>,
   ): Promise<LoggerDocument | null> {
-    return this.loggerModel.findByIdAndUpdate(logId, updateData, { new: true });
+    return this.loggerModel.findByIdAndUpdate(logId, updateData, {
+      returnDocument: 'after',
+    });
   }
 }

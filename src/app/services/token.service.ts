@@ -3,7 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { sign } from 'jsonwebtoken';
-import { Token, TokenDocument, TokenType, DeviceType } from '../entities/token.entity';
+import {
+  Token,
+  TokenDocument,
+  TokenType,
+  DeviceType,
+  UserType,
+} from '../entities/token.entity';
 
 @Injectable()
 export class TokenService {
@@ -12,10 +18,17 @@ export class TokenService {
     private configService: ConfigService,
   ) {}
 
-  async generateAccessToken(deviceId: string, deviceType: DeviceType): Promise<string> {
-    const payload = {
+  async generateAccessToken(
+    deviceId: string,
+    deviceType: DeviceType,
+    userId?: string,
+    userType?: UserType,
+  ): Promise<string> {
+    const payload: any = {
       deviceId,
       tokenType: TokenType.ACCESS,
+      ...(userId ? { userId } : {}),
+      ...(userType ? { userType } : {}),
     };
 
     const secret = this.configService.get<string>('jwt.accessSecret');
@@ -27,23 +40,47 @@ export class TokenService {
 
     const token = sign(payload, secret, { expiresIn });
 
-    // Store in database
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
-    await this.tokenModel.create({
-      token,
-      deviceId,
-      deviceType,
-      tokenType: TokenType.ACCESS,
-      expiresAt,
-    });
+    const filter: any = { deviceId, tokenType: TokenType.ACCESS };
+    if (userId) {
+      filter.userId = userId;
+    }
+    if (userType) {
+      filter.userType = userType;
+    }
+
+    await this.tokenModel.findOneAndUpdate(
+      filter,
+      {
+        token,
+        deviceId,
+        deviceType,
+        tokenType: TokenType.ACCESS,
+        expiresAt,
+        ...(userId ? { userId } : {}),
+        ...(userType ? { userType } : {}),
+      },
+      {
+        upsert: true,
+        returnDocument: 'after',  //same as {new:true} in mongodb
+        setDefaultsOnInsert: true,
+      },
+    );
 
     return token;
   }
 
-  async generateRefreshToken(deviceId: string, deviceType: DeviceType): Promise<string> {
-    const payload = {
+  async generateRefreshToken(
+    deviceId: string,
+    deviceType: DeviceType,
+    userId?: string,
+    userType?: UserType,
+  ): Promise<string> {
+    const payload: any = {
       deviceId,
       tokenType: TokenType.REFRESH,
+      ...(userId ? { userId } : {}),
+      ...(userType ? { userType } : {}),
     };
 
     const secret = this.configService.get<string>('jwt.refreshSecret');
@@ -55,15 +92,32 @@ export class TokenService {
 
     const token = sign(payload, secret, { expiresIn });
 
-    // Store in database
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
-    await this.tokenModel.create({
-      token,
-      deviceId,
-      deviceType,
-      tokenType: TokenType.REFRESH,
-      expiresAt,
-    });
+    const filter: any = { deviceId, tokenType: TokenType.REFRESH };
+    if (userId) {
+      filter.userId = userId;
+    }
+    if (userType) {
+      filter.userType = userType;
+    }
+
+    await this.tokenModel.findOneAndUpdate(
+      filter,
+      {
+        token,
+        deviceId,
+        deviceType,
+        tokenType: TokenType.REFRESH,
+        expiresAt,
+        ...(userId ? { userId } : {}),
+        ...(userType ? { userType } : {}),
+      },
+      {
+        upsert: true,
+        returnDocument: 'after',
+        setDefaultsOnInsert: true,
+      },
+    );
 
     return token;
   }
@@ -75,7 +129,6 @@ export class TokenService {
     const token = await this.tokenModel.findOne({
       deviceId,
       tokenType,
-      isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
 
@@ -83,30 +136,30 @@ export class TokenService {
   }
 
   async invalidateToken(token: string): Promise<void> {
-    await this.tokenModel.updateOne(
-      { token },
-      { $set: { isRevoked: true } },
-    );
+    await this.tokenModel.deleteOne({ token });
   }
 
   async invalidateDeviceTokens(deviceId: string): Promise<void> {
-    await this.tokenModel.updateMany(
-      { deviceId, isRevoked: false },
-      { $set: { isRevoked: true } },
-    );
+    await this.tokenModel.deleteMany({ deviceId });
+  }
+
+  async invalidateUserDeviceTokens(
+    userId: string,
+    deviceId: string,
+  ): Promise<void> {
+    await this.tokenModel.deleteMany({ userId, deviceId });
+  }
+
+  async invalidateAllUserTokens(userId: string): Promise<void> {
+    await this.tokenModel.deleteMany({ userId });
   }
 
   async invalidateMobileTokens(deviceId: string, deviceType: DeviceType): Promise<void> {
     if (deviceType === DeviceType.IOS || deviceType === DeviceType.ANDROID) {
-      // For mobile, invalidate all mobile tokens for this device
-      await this.tokenModel.updateMany(
-        {
-          deviceId,
-          deviceType: { $in: [DeviceType.IOS, DeviceType.ANDROID] },
-          isRevoked: false,
-        },
-        { $set: { isRevoked: true } },
-      );
+      await this.tokenModel.deleteMany({
+        deviceId,
+        deviceType: { $in: [DeviceType.IOS, DeviceType.ANDROID] },
+      });
     }
   }
 
@@ -114,7 +167,6 @@ export class TokenService {
     return this.tokenModel.findOne({
       token,
       tokenType,
-      isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
   }

@@ -66,35 +66,26 @@ export class ResponseTransformInterceptor implements NestInterceptor {
           return standardResponse;
         }
 
-        // Handle pagination structure: page, limit, totalItems, totalPages
-        if (Array.isArray(dataWithoutMessages)) {
-          standardResponse.data = {
-            result: dataWithoutMessages,
-          };
-        } else if (dataWithoutMessages && typeof dataWithoutMessages === 'object') {
-          // If data has pagination info, extract it
-          if (dataWithoutMessages.pagination || dataWithoutMessages.result) {
-            standardResponse.data = {
-              result: dataWithoutMessages.result || dataWithoutMessages,
-              pagination: {
-                page: dataWithoutMessages.pagination?.page || 1,
-                limit: dataWithoutMessages.pagination?.limit || dataWithoutMessages.pagination?.perPage || 10,
-                totalItems: dataWithoutMessages.pagination?.totalItems || dataWithoutMessages.pagination?.total || 0,
-                totalPages: dataWithoutMessages.pagination?.totalPages || 
-                  Math.ceil((dataWithoutMessages.pagination?.totalItems || dataWithoutMessages.pagination?.total || 0) / 
-                           (dataWithoutMessages.pagination?.limit || dataWithoutMessages.pagination?.perPage || 10)),
-              },
-            };
-          } else {
-            standardResponse.data = {
-              result: dataWithoutMessages,
-            };
-          }
-        } else {
-          standardResponse.data = {
-            result: dataWithoutMessages,
-          };
+        // Normalize result and optional pagination.
+        // If the service already returned a `result` key, unwrap it to avoid `data.result.result`.
+        let finalResult: any = dataWithoutMessages;
+
+        if (
+          dataWithoutMessages &&
+          typeof dataWithoutMessages === 'object' &&
+          'result' in dataWithoutMessages
+        ) {
+          finalResult = (dataWithoutMessages as any).result;
         }
+
+        // Build the data block, attaching pagination only if explicitly provided.
+        standardResponse.data = {
+          result: finalResult,
+          ...(dataWithoutMessages &&
+            (dataWithoutMessages as any).pagination && {
+              pagination: (dataWithoutMessages as any).pagination,
+            }),
+        };
 
         return standardResponse;
       }),

@@ -180,14 +180,21 @@ export class DriverService {
       }
     }
 
-    const driver = await this.driverModel.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      {
-        ...updateDriverDto,
-        truckId: updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : undefined,
-      },
-      { new: true, runValidators: true },
-    ).exec();
+    const driver = await this.driverModel
+      .findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        {
+          ...updateDriverDto,
+          truckId: updateDriverDto.truckId
+            ? new Types.ObjectId(updateDriverDto.truckId)
+            : undefined,
+        },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      )
+      .exec();
 
     if (!driver) {
       throw new NotFoundException(`Driver with ID ${id} not found`);

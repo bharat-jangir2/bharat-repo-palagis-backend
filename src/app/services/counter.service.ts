@@ -10,11 +10,16 @@ export class CounterService {
   ) {}
 
   async getNextSequence(name: string): Promise<number> {
-    const counter = await this.counterModel.findOneAndUpdate(
-      { name },
-      { $inc: { sequence: 1 } },
-      { new: true, upsert: true },
-    ).exec();
+    const counter = await this.counterModel
+      .findOneAndUpdate(
+        { name },
+        { $inc: { sequence: 1 } },
+        {
+          upsert: true,
+          returnDocument: 'after',
+        },
+      )
+      .exec();
 
     return counter.sequence;
   }

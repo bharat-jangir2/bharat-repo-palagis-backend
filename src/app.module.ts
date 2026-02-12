@@ -20,7 +20,11 @@ import { DriverService } from './app/services/driver.service';
 import { LoggerService } from './app/services/logger.service';
 import { Truck, TruckSchema } from './app/entities/truck.entity';
 import { Driver, DriverSchema } from './app/entities/driver.entity';
-import { LoggerEntity, LoggerSchema, LoggerCollectionName } from './app/entities/logger.entity';
+import {
+  LoggerEntity,
+  LoggerSchema,
+  LoggerCollectionName,
+} from './app/entities/logger.entity';
 import { Token, TokenSchema } from './app/entities/token.entity';
 import { Counter, CounterSchema } from './app/entities/counter.entity';
 import { LoggingInterceptor } from './app/interceptors/logging.interceptor';
@@ -32,6 +36,16 @@ import { TokenService } from './app/services/token.service';
 import { CounterService } from './app/services/counter.service';
 import { JwtAuthGuard } from './app/guards/jwt-auth.guard';
 import { AuthController } from './app/controllers/auth.controller';
+import { Device, DeviceSchema } from './app/entities/device.entity';
+import { DeviceService } from './app/services/device.service';
+import { AppDeviceController } from './app/controllers/app/app-device.controller';
+import {
+  SuperAdmin,
+  SuperAdminSchema,
+} from './app/entities/super-admin.entity';
+import { SuperAdminService } from './app/services/super-admin.service';
+import { SuperAdminAuthService } from './app/services/super-admin-auth.service';
+import { SuperAdminAuthController } from './app/controllers/admin/super-admin-auth.controller';
 
 const logger = new Logger('Database');
 
@@ -75,9 +89,15 @@ const logger = new Logger('Database');
     MongooseModule.forFeature([
       { name: Truck.name, schema: TruckSchema },
       { name: Driver.name, schema: DriverSchema },
-      { name: LoggerEntity.name, schema: LoggerSchema, collection: LoggerCollectionName },
+      {
+        name: LoggerEntity.name,
+        schema: LoggerSchema,
+        collection: LoggerCollectionName,
+      },
       { name: Token.name, schema: TokenSchema },
       { name: Counter.name, schema: CounterSchema },
+      { name: Device.name, schema: DeviceSchema },
+      { name: SuperAdmin.name, schema: SuperAdminSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
@@ -92,6 +112,8 @@ const logger = new Logger('Database');
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,
+    AppDeviceController,
+    SuperAdminAuthController,
   ],
   providers: [
     AppService,
@@ -99,6 +121,9 @@ const logger = new Logger('Database');
     CounterService,
     DriverService,
     LoggerService,
+    DeviceService,
+    SuperAdminService,
+    SuperAdminAuthService,
     // Auth providers
     JwtStrategy,
     AuthService,

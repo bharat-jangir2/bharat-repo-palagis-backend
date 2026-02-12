@@ -4,11 +4,13 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Token, TokenType } from '../entities/token.entity';
+import { Token, TokenType, UserType } from '../entities/token.entity';
 
 export interface JwtPayload {
   deviceId: string;
   tokenType: TokenType;
+  userId?: string;
+  userType?: UserType;
   iat?: number;
   exp?: number;
 }
@@ -50,7 +52,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       token,
       deviceId: payload.deviceId,
       tokenType: TokenType.ACCESS,
-      isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
 
@@ -60,6 +61,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     return {
       deviceId: payload.deviceId,
+      userId: payload.userId,
+      userType: payload.userType,
     };
   }
 
