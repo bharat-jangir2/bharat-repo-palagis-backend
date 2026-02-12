@@ -3,11 +3,7 @@ import { IsString, IsEmail, IsOptional, IsBoolean, IsMongoId, MinLength } from '
 export class CreateDriverDto {
   @IsString()
   @MinLength(2)
-  firstName: string;
-
-  @IsString()
-  @MinLength(2)
-  lastName: string;
+  fullName: string;
 
   @IsEmail()
   email: string;
@@ -16,16 +12,17 @@ export class CreateDriverDto {
   @MinLength(10)
   phone: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(5)
-  licenseNumber: string;
+  licenseNumber?: string;
 
   @IsOptional()
   @IsString()
   address?: string;
 
+  @IsOptional()
   @IsMongoId()
-  truckId: string; // Required - Admin selects truck when creating driver
+  truckId?: string;
 
   @IsOptional()
   @IsBoolean()

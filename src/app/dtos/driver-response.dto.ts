@@ -1,12 +1,11 @@
 export class DriverResponseDto {
   id: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   phone: string;
-  licenseNumber: string;
+  licenseNumber?: string;
   address?: string;
-  truckId: string;
+  truckId?: string;
   isActive?: boolean;
   isDeleted: boolean;
   createdAt: Date;

@@ -14,44 +14,50 @@ export class DriverService {
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
-    // Check if driver with same email, phone, or license already exists
+    // Check if driver with same email or phone already exists
     const existingDriver = await this.driverModel.findOne({
       $or: [
         { email: createDriverDto.email },
         { phone: createDriverDto.phone },
-        { licenseNumber: createDriverDto.licenseNumber },
       ],
       isDeleted: false,
     });
 
     if (existingDriver) {
-      throw new ConflictException('Driver with this email, phone, or license number already exists');
+      throw new ConflictException('Driver with this email or phone already exists');
     }
 
-    // Validate truck exists (required)
-    const truck = await this.truckModel.findOne({ 
-      _id: createDriverDto.truckId, 
-      isDeleted: false 
-    }).exec();
-    
-    if (!truck) {
-      throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
-    }
+    // Validate truck exists only if truckId is provided
+    if (createDriverDto.truckId) {
+      const truck = await this.truckModel.findOne({ 
+        _id: createDriverDto.truckId, 
+        isDeleted: false 
+      }).exec();
+      
+      if (!truck) {
+        throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
+      }
 
-    // Check if truck is already assigned to another non-deleted driver
-    const existingDriverForTruck = await this.driverModel.findOne({
-      truckId: new Types.ObjectId(createDriverDto.truckId),
-      isDeleted: false,
-    }).exec();
+      // Check if truck is already assigned to another non-deleted driver
+      const existingDriverForTruck = await this.driverModel.findOne({
+        truckId: new Types.ObjectId(createDriverDto.truckId),
+        isDeleted: false,
+      }).exec();
 
-    if (existingDriverForTruck) {
-      throw new ConflictException('This truck is already assigned to another driver');
+      if (existingDriverForTruck) {
+        throw new ConflictException('This truck is already assigned to another driver');
+      }
     }
 
     // Create driver
     const createdDriver = await this.driverModel.create({
-      ...createDriverDto,
-      truckId: new Types.ObjectId(createDriverDto.truckId),
+      fullName: createDriverDto.fullName,
+      email: createDriverDto.email,
+      phone: createDriverDto.phone,
+      licenseNumber: createDriverDto.licenseNumber,
+      address: createDriverDto.address,
+      truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
+      isActive: createDriverDto.isActive ?? true,
       isDeleted: false,
     });
 
@@ -60,8 +66,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
-          firstName: 1,
-          lastName: 1,
+          fullName: 1,
           email: 1,
           phone: 1,
           licenseNumber: 1,
@@ -96,8 +101,7 @@ export class DriverService {
             {
               $project: {
                 _id: 1,
-                firstName: 1,
-                lastName: 1,
+                fullName: 1,
                 email: 1,
                 phone: 1,
                 licenseNumber: 1,
@@ -135,8 +139,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
-          firstName: 1,
-          lastName: 1,
+          fullName: 1,
           email: 1,
           phone: 1,
           licenseNumber: 1,
@@ -158,7 +161,7 @@ export class DriverService {
   }
 
   async update(id: string, updateDriverDto: UpdateDriverDto) {
-    // If truckId is being updated, validate it
+    // If truckId is being updated, validate it (only if provided)
     if (updateDriverDto.truckId) {
       const truck = await this.truckModel.findOne({ 
         _id: updateDriverDto.truckId, 
@@ -180,15 +183,22 @@ export class DriverService {
       }
     }
 
+    // Build update object, only including provided fields
+    const updateData: any = {};
+    if (updateDriverDto.fullName !== undefined) updateData.fullName = updateDriverDto.fullName;
+    if (updateDriverDto.email !== undefined) updateData.email = updateDriverDto.email;
+    if (updateDriverDto.phone !== undefined) updateData.phone = updateDriverDto.phone;
+    if (updateDriverDto.licenseNumber !== undefined) updateData.licenseNumber = updateDriverDto.licenseNumber;
+    if (updateDriverDto.address !== undefined) updateData.address = updateDriverDto.address;
+    if (updateDriverDto.truckId !== undefined) {
+      updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
+    }
+    if (updateDriverDto.isActive !== undefined) updateData.isActive = updateDriverDto.isActive;
+
     const driver = await this.driverModel
       .findOneAndUpdate(
         { _id: id, isDeleted: false },
-        {
-          ...updateDriverDto,
-          truckId: updateDriverDto.truckId
-            ? new Types.ObjectId(updateDriverDto.truckId)
-            : undefined,
-        },
+        updateData,
         {
           returnDocument: 'after',
           runValidators: true,
@@ -205,8 +215,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
-          firstName: 1,
-          lastName: 1,
+          fullName: 1,
           email: 1,
           phone: 1,
           licenseNumber: 1,
