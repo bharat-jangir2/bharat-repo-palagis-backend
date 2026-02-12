@@ -15,8 +15,18 @@ export class Truck {
   @Prop({ required: true, unique: true })
   vehicleNumber: string;
 
-  @Prop({ required: true })
-  truckName: string;
+  @Prop()
+  truckName?: string; // Optional - for backward compatibility
+
+  @Prop()
+  vehicleModel?: string; // e.g., "Ford Transit 2022"
+
+  @Prop({ required: true, unique: true })
+  licensePlate: string;
+
+  // Reference to Driver - Optional
+  @Prop({ type: Types.ObjectId, ref: 'Driver', required: false })
+  driverId?: Types.ObjectId;
 
   // GeoJSON structure for Proximity Queries
   @Prop({
@@ -36,6 +46,9 @@ export class Truck {
     type: string;
     coordinates: number[];
   };
+
+  @Prop({ default: true })
+  isActive: boolean; // Status field from form
 
   @Prop({ default: false })
   isOnline: boolean;

@@ -1,11 +1,18 @@
 export class TruckResponseDto {
   id: string;
+  truckCode: string;
   vehicleNumber: string;
-  truckName: string;
+  truckName?: string;
+  vehicleModel?: string;
+  licensePlate: string;
+  driverId?: string;
   location: {
     type: string;
     coordinates: [number, number]; // [longitude, latitude]
   };
+  latitude?: number;
+  longitude?: number;
+  isActive: boolean;
   isOnline: boolean;
   isDeleted: boolean;
   createdAt: Date;

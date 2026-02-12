@@ -4,39 +4,87 @@ import { Model, Types } from 'mongoose';
 import { CreateTruckDto } from '../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../dtos/update-truck.dto';
 import { Truck, TruckDocument } from '../entities/truck.entity';
+import { Driver, DriverDocument } from '../entities/driver.entity';
 import { CounterService } from './counter.service';
 
 @Injectable()
 export class TruckService {
   constructor(
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
+    @InjectModel(Driver.name) private driverModel: Model<DriverDocument>,
     private counterService: CounterService,
   ) {}
 
   async create(createTruckDto: CreateTruckDto) {
-    const existingTruck = await this.truckModel.findOne({
+    // Check if vehicle number already exists
+    const existingTruckByVehicleNumber = await this.truckModel.findOne({
       vehicleNumber: createTruckDto.vehicleNumber,
       isDeleted: false,
     });
 
-    if (existingTruck) {
+    if (existingTruckByVehicleNumber) {
       throw new ConflictException('Truck with this vehicle number already exists');
+    }
+
+    // Check if license plate already exists
+    const existingTruckByLicense = await this.truckModel.findOne({
+      licensePlate: createTruckDto.licensePlate,
+      isDeleted: false,
+    });
+
+    if (existingTruckByLicense) {
+      throw new ConflictException('Truck with this license plate already exists');
+    }
+
+    // Validate driver exists if driverId is provided
+    if (createTruckDto.driverId) {
+      const driver = await this.driverModel.findOne({
+        _id: createTruckDto.driverId,
+        isDeleted: false,
+      }).exec();
+
+      if (!driver) {
+        throw new NotFoundException(`Driver with ID ${createTruckDto.driverId} not found`);
+      }
+
+      // Check if driver is already assigned to another truck
+      const existingTruckForDriver = await this.truckModel.findOne({
+        driverId: new Types.ObjectId(createTruckDto.driverId),
+        isDeleted: false,
+      }).exec();
+
+      if (existingTruckForDriver) {
+        throw new ConflictException('This driver is already assigned to another truck');
+      }
     }
 
     // Generate auto-incrementing truck code
     const truckCode = await this.counterService.getNextTruckCode();
 
-    const truckData = {
+    const truckData: any = {
       truckCode,
       vehicleNumber: createTruckDto.vehicleNumber,
+      licensePlate: createTruckDto.licensePlate,
+      vehicleModel: createTruckDto.vehicleModel,
       truckName: createTruckDto.truckName,
-      location: {
-        type: 'Point',
-        coordinates: createTruckDto.coordinates, // [longitude, latitude]
-      },
+      driverId: createTruckDto.driverId ? new Types.ObjectId(createTruckDto.driverId) : undefined,
+      isActive: createTruckDto.isActive ?? true,
       isOnline: createTruckDto.isOnline ?? false,
       isDeleted: false,
     };
+
+    // Add location only if coordinates provided
+    if (createTruckDto.coordinates) {
+      truckData.location = {
+        type: 'Point',
+        coordinates: createTruckDto.coordinates, // [longitude, latitude]
+      };
+    } else {
+      truckData.location = {
+        type: 'Point',
+        coordinates: [0, 0], // Default location
+      };
+    }
 
     const createdTruck = await this.truckModel.create(truckData);
     
@@ -49,9 +97,13 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
+          vehicleModel: 1,
+          licensePlate: 1,
+          driverId: { $toString: '$driverId' },
           location: 1,
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
+          isActive: 1,
           isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
@@ -83,7 +135,11 @@ export class TruckService {
                 truckCode: 1,
                 vehicleNumber: 1,
                 truckName: 1,
+                vehicleModel: 1,
+                licensePlate: 1,
+                driverId: { $toString: '$driverId' },
                 location: 1,
+                isActive: 1,
                 isOnline: 1,
                 isDeleted: 1,
                 createdAt: 1,
@@ -119,7 +175,11 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
+          vehicleModel: 1,
+          licensePlate: 1,
+          driverId: { $toString: '$driverId' },
           location: 1,
+          isActive: 1,
           isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
@@ -136,10 +196,55 @@ export class TruckService {
   }
 
   async update(id: string, updateTruckDto: UpdateTruckDto) {
-    const updateData: any = { ...updateTruckDto };
-    
-    // Remove truckCode from update data (it should not be updated)
-    delete updateData.truckCode;
+    // Check if license plate is being updated and if it conflicts
+    if (updateTruckDto.licensePlate) {
+      const existingTruckByLicense = await this.truckModel.findOne({
+        licensePlate: updateTruckDto.licensePlate,
+        isDeleted: false,
+        _id: { $ne: new Types.ObjectId(id) },
+      }).exec();
+
+      if (existingTruckByLicense) {
+        throw new ConflictException('Truck with this license plate already exists');
+      }
+    }
+
+    // Validate driver exists if driverId is being updated
+    if (updateTruckDto.driverId !== undefined) {
+      if (updateTruckDto.driverId) {
+        const driver = await this.driverModel.findOne({
+          _id: updateTruckDto.driverId,
+          isDeleted: false,
+        }).exec();
+
+        if (!driver) {
+          throw new NotFoundException(`Driver with ID ${updateTruckDto.driverId} not found`);
+        }
+
+        // Check if driver is already assigned to another truck (excluding current truck)
+        const existingTruckForDriver = await this.truckModel.findOne({
+          driverId: new Types.ObjectId(updateTruckDto.driverId),
+          isDeleted: false,
+          _id: { $ne: new Types.ObjectId(id) },
+        }).exec();
+
+        if (existingTruckForDriver) {
+          throw new ConflictException('This driver is already assigned to another truck');
+        }
+      }
+    }
+
+    // Build update object, only including provided fields
+    const updateData: any = {};
+    if (updateTruckDto.vehicleNumber !== undefined) updateData.vehicleNumber = updateTruckDto.vehicleNumber;
+    if (updateTruckDto.truckName !== undefined) updateData.truckName = updateTruckDto.truckName;
+    if (updateTruckDto.vehicleModel !== undefined) updateData.vehicleModel = updateTruckDto.vehicleModel;
+    if (updateTruckDto.licensePlate !== undefined) updateData.licensePlate = updateTruckDto.licensePlate;
+    if (updateTruckDto.driverId !== undefined) {
+      updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
+    }
+    if (updateTruckDto.isActive !== undefined) updateData.isActive = updateTruckDto.isActive;
+    if (updateTruckDto.isOnline !== undefined) updateData.isOnline = updateTruckDto.isOnline;
     
     // Handle location update if coordinates provided
     if (updateTruckDto.coordinates) {
@@ -147,7 +252,6 @@ export class TruckService {
         type: 'Point',
         coordinates: updateTruckDto.coordinates,
       };
-      delete updateData.coordinates;
     }
 
     const truck = await this.truckModel
@@ -173,7 +277,11 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
+          vehicleModel: 1,
+          licensePlate: 1,
+          driverId: { $toString: '$driverId' },
           location: 1,
+          isActive: 1,
           isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
@@ -222,7 +330,11 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           truckName: 1,
+          vehicleModel: 1,
+          licensePlate: 1,
+          driverId: { $toString: '$driverId' },
           location: 1,
+          isActive: 1,
           isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
