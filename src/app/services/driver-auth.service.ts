@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { verify } from 'jsonwebtoken';
+import { ConfigService } from '@nestjs/config';
 import { TokenService } from './token.service';
-import { DeviceType, UserType } from '../entities/token.entity';
+import { DeviceType, UserType, TokenType } from '../entities/token.entity';
 import { DriverService } from './driver.service';
 import { DriverLoginDto } from '../dtos/driver-login.dto';
 
@@ -9,6 +11,7 @@ export class DriverAuthService {
   constructor(
     private readonly tokenService: TokenService,
     private readonly driverService: DriverService,
+    private readonly configService: ConfigService,
   ) {}
 
   async login(
@@ -62,6 +65,77 @@ export class DriverAuthService {
       userMessageCode: 'LOGIN_SUCCESS',
       developerMessage: 'Login successfully',
       result: loginResponse,
+    };
+  }
+
+  /**
+   * Refresh access token using refresh token for driver.
+   */
+  async refreshToken(refreshToken: string, deviceId: string) {
+    const secret = this.configService.get<string>('jwt.refreshSecret');
+    
+    if (!secret) {
+      throw new UnauthorizedException('JWT refresh secret is not configured');
+    }
+
+    let payload: any;
+    try {
+      payload = verify(refreshToken, secret);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (payload.tokenType !== TokenType.REFRESH) {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    if (payload.userType !== UserType.DRIVER) {
+      throw new UnauthorizedException('Invalid user type for refresh token');
+    }
+
+    if (payload.deviceId !== deviceId) {
+      throw new UnauthorizedException('Device ID mismatch');
+    }
+
+    if (!payload.userId) {
+      throw new UnauthorizedException('User ID not found in token');
+    }
+
+    // Verify token exists in database
+    const token = await this.tokenService.findToken(refreshToken, TokenType.REFRESH);
+    if (!token) {
+      throw new UnauthorizedException('Refresh token not found or invalidated');
+    }
+
+    // Verify token belongs to driver
+    if (token.userId !== payload.userId || token.userType !== UserType.DRIVER) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Generate new access token and refresh token with same userId and userType
+    // This will update the token entity in the database
+    const accessToken = await this.tokenService.generateAccessToken(
+      deviceId,
+      token.deviceType,
+      payload.userId,
+      UserType.DRIVER,
+    );
+
+    const newRefreshToken = await this.tokenService.generateRefreshToken(
+      deviceId,
+      token.deviceType,
+      payload.userId,
+      UserType.DRIVER,
+    );
+
+    return {
+      userMessage: 'Token refreshed successfully',
+      userMessageCode: 'TOKEN_REFRESHED',
+      developerMessage: 'Token refreshed successfully',
+      result: {
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
     };
   }
 

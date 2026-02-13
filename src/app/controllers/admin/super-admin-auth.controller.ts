@@ -12,6 +12,7 @@ import {
 import { SuperAdminAuthService } from '../../services/super-admin-auth.service';
 import { SuperAdminLoginDto } from '../../dtos/super-admin-login.dto';
 import { SuperAdminChangePasswordDto } from '../../dtos/super-admin-change-password.dto';
+import { RefreshTokenDto } from '../../dtos/refresh-token.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { DeviceType } from '../../entities/token.entity';
@@ -45,8 +46,26 @@ export class SuperAdminAuthController {
       deviceId,
       deviceType: deviceType as DeviceType,
     });
+  }
 
-    
+  @Public()
+  @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Headers('x-device-id') deviceId: string,
+  ) {
+    // Use deviceId from header if provided, otherwise use from body
+    const finalDeviceId = deviceId || refreshTokenDto.deviceId;
+
+    if (!finalDeviceId) {
+      throw new UnauthorizedException('Device ID is required');
+    }
+
+    return await this.superAdminAuthService.refreshToken(
+      refreshTokenDto.refreshToken,
+      finalDeviceId,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

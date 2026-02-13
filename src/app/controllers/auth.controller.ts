@@ -6,6 +6,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dtos/login.dto';
@@ -32,6 +33,9 @@ export class AuthController {
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    if (!refreshTokenDto.deviceId) {
+      throw new UnauthorizedException('Device ID is required');
+    }
     return this.authService.refreshToken(
       refreshTokenDto.refreshToken,
       refreshTokenDto.deviceId,
