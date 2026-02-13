@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, ArrayMinSize, ArrayMaxSize, IsMongoId } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, ArrayMinSize, ArrayMaxSize, IsMongoId, IsEnum } from 'class-validator';
+import { TruckStatus } from '../entities/truck.entity';
 
 export class CreateTruckDto {
   @IsString()
@@ -29,5 +30,9 @@ export class CreateTruckDto {
 
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean;
+  isActive?: boolean; // Defaults to true on creation
+
+  @IsOptional()
+  @IsEnum(TruckStatus)
+  truckStatus?: TruckStatus; // Managed via API, defaults to ACTIVE in entity
 }

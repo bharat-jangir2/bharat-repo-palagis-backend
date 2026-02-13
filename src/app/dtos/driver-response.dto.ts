@@ -1,3 +1,5 @@
+import { DriverStatus } from '../entities/driver.entity';
+
 export class DriverResponseDto {
   id: string;
   fullName: string;
@@ -7,6 +9,7 @@ export class DriverResponseDto {
   address?: string;
   truckId?: string;
   isActive?: boolean;
+  driverStatus: DriverStatus;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;

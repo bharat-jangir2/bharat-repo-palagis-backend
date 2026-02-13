@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
-import { Driver, DriverDocument } from '../entities/driver.entity';
+import { Driver, DriverDocument, DriverStatus } from '../entities/driver.entity';
 import { Truck, TruckDocument } from '../entities/truck.entity';
 
 @Injectable()
@@ -66,6 +66,7 @@ export class DriverService {
       truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
       passcode: hashedPasscode,
       isActive: createDriverDto.isActive ?? true,
+      driverStatus: createDriverDto.driverStatus ?? DriverStatus.ACTIVE,
       isDeleted: false,
     });
 
@@ -81,6 +82,7 @@ export class DriverService {
           address: 1,
           truckId: { $toString: '$truckId' },
           isActive: 1,
+          driverStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -169,6 +171,7 @@ export class DriverService {
           address: 1,
           truckId: { $toString: '$truckId' },
           isActive: 1,
+          driverStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -217,6 +220,7 @@ export class DriverService {
       updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
     }
     if (updateDriverDto.isActive !== undefined) updateData.isActive = updateDriverDto.isActive;
+    if (updateDriverDto.driverStatus !== undefined) updateData.driverStatus = updateDriverDto.driverStatus;
 
     const driver = await this.driverModel
       .findOneAndUpdate(
@@ -245,6 +249,7 @@ export class DriverService {
           address: 1,
           truckId: { $toString: '$truckId' },
           isActive: 1,
+          driverStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,

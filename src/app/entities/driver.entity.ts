@@ -3,6 +3,11 @@ import { Document, Types } from 'mongoose';
 
 export type DriverDocument = Driver & Document;
 
+export enum DriverStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+}
+
 @Schema({ timestamps: true })
 export class Driver {
   @Prop({ required: true })
@@ -29,6 +34,9 @@ export class Driver {
 
   @Prop({ default: true })
   isActive?: boolean;
+
+  @Prop({ type: String, enum: DriverStatus, default: DriverStatus.ACTIVE })
+  driverStatus: DriverStatus;
 
   @Prop({ default: false })
   isDeleted: boolean;

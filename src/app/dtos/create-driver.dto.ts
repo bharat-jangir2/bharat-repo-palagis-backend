@@ -1,4 +1,5 @@
-import { IsString, IsEmail, IsOptional, IsBoolean, IsMongoId, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsBoolean, IsMongoId, MinLength, IsEnum } from 'class-validator';
+import { DriverStatus } from '../entities/driver.entity';
 
 export class CreateDriverDto {
   @IsString()
@@ -26,5 +27,9 @@ export class CreateDriverDto {
 
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean;
+  isActive?: boolean; // Defaults to true on creation
+
+  @IsOptional()
+  @IsEnum(DriverStatus)
+  driverStatus?: DriverStatus; // Managed via API, defaults to ACTIVE in entity
 }

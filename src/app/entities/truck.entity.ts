@@ -3,6 +3,11 @@ import { Document, Types } from 'mongoose';
 
 export type TruckDocument = Truck & Document;
 
+export enum TruckStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+}
+
 @Schema({ 
   timestamps: true,
   toJSON: { virtuals: true },
@@ -49,6 +54,9 @@ export class Truck {
 
   @Prop({ default: true })
   isActive: boolean; // Status field from form
+
+  @Prop({ type: String, enum: TruckStatus, default: TruckStatus.ACTIVE })
+  truckStatus: TruckStatus;
 
   @Prop({ default: false })
   isDeleted: boolean;

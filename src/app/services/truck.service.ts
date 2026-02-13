@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateTruckDto } from '../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../dtos/update-truck.dto';
-import { Truck, TruckDocument } from '../entities/truck.entity';
+import { Truck, TruckDocument, TruckStatus } from '../entities/truck.entity';
 import { Driver, DriverDocument } from '../entities/driver.entity';
 import { CounterService } from './counter.service';
 
@@ -69,6 +69,7 @@ export class TruckService {
       truckName: createTruckDto.truckName,
       driverId: createTruckDto.driverId ? new Types.ObjectId(createTruckDto.driverId) : undefined,
       isActive: createTruckDto.isActive ?? true,
+      truckStatus: createTruckDto.truckStatus ?? TruckStatus.ACTIVE,
       isDeleted: false,
     };
 
@@ -103,6 +104,7 @@ export class TruckService {
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isActive: 1,
+          truckStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -225,6 +227,7 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
+          truckStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -288,6 +291,7 @@ export class TruckService {
       updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
     }
     if (updateTruckDto.isActive !== undefined) updateData.isActive = updateTruckDto.isActive;
+    if (updateTruckDto.truckStatus !== undefined) updateData.truckStatus = updateTruckDto.truckStatus;
     
     // Handle location update if coordinates provided
     if (updateTruckDto.coordinates) {
@@ -325,6 +329,7 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
+          truckStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -377,6 +382,7 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
+          truckStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,

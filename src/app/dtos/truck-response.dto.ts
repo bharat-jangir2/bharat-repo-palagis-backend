@@ -1,3 +1,5 @@
+import { TruckStatus } from '../entities/truck.entity';
+
 export class TruckResponseDto {
   id: string;
   truckCode: string;
@@ -13,6 +15,7 @@ export class TruckResponseDto {
   latitude?: number;
   longitude?: number;
   isActive: boolean;
+  truckStatus: TruckStatus;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
