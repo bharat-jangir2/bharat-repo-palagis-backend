@@ -24,6 +24,9 @@ export class Driver {
   @Prop({ type: Types.ObjectId, ref: 'Truck', required: false })
   truckId?: Types.ObjectId;
 
+  @Prop({ required: true })
+  passcode: string; // Hashed 6-digit passcode for login
+
   @Prop({ default: true })
   isActive?: boolean;
 

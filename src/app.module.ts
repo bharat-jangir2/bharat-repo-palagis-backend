@@ -14,6 +14,7 @@ import { AdminTruckController } from './app/controllers/admin/admin-truck.contro
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
 import { AppTruckController } from './app/controllers/app/app-truck.controller';
 import { AppDriverController } from './app/controllers/app/app-driver.controller';
+import { AppDriverAuthController } from './app/controllers/app/app-driver-auth.controller';
 import { AppService } from './app/services/app.service';
 import { TruckService } from './app/services/truck.service';
 import { DriverService } from './app/services/driver.service';
@@ -46,6 +47,7 @@ import {
 import { SuperAdminService } from './app/services/super-admin.service';
 import { SuperAdminAuthService } from './app/services/super-admin-auth.service';
 import { SuperAdminAuthController } from './app/controllers/admin/super-admin-auth.controller';
+import { DriverAuthService } from './app/services/driver-auth.service';
 
 const logger = new Logger('Database');
 
@@ -109,6 +111,7 @@ const logger = new Logger('Database');
     AppController,
     AppTruckController,
     AppDriverController,
+    AppDriverAuthController,
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,
@@ -124,6 +127,7 @@ const logger = new Logger('Database');
     DeviceService,
     SuperAdminService,
     SuperAdminAuthService,
+    DriverAuthService,
     // Auth providers
     JwtStrategy,
     AuthService,

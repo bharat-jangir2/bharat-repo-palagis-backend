@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
 import { Driver, DriverDocument } from '../entities/driver.entity';
@@ -49,6 +50,12 @@ export class DriverService {
       }
     }
 
+    // Generate random 6-digit passcode
+    const plainPasscode = this.generatePasscode();
+    
+    // Hash the passcode before storing
+    const hashedPasscode = await bcrypt.hash(plainPasscode, 10);
+
     // Create driver
     const createdDriver = await this.driverModel.create({
       fullName: createDriverDto.fullName,
@@ -57,6 +64,7 @@ export class DriverService {
       licenseNumber: createDriverDto.licenseNumber,
       address: createDriverDto.address,
       truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
+      passcode: hashedPasscode,
       isActive: createDriverDto.isActive ?? true,
       isDeleted: false,
     });
@@ -80,7 +88,22 @@ export class DriverService {
       },
     ]);
 
-    return result[0];
+    // Return result with plain passcode (only in create response, for admin to share with driver)
+    // Note: passcode is stored hashed in DB, but we return plain text here since we have it before hashing
+    return {
+      ...result[0],
+      passcode: plainPasscode, // Return plain passcode only on creation
+    };
+  }
+
+  /**
+   * Generate a random 6-digit passcode
+   */
+  private generatePasscode(): string {
+    // Generate random number between 100000 and 999999
+    const min = 100000;
+    const max = 999999;
+    return Math.floor(Math.random() * (max - min + 1) + min).toString();
   }
 
   async findAll(
@@ -247,6 +270,36 @@ export class DriverService {
       isDeleted: true,
     }).exec();
 
+  }
+
+  /**
+   * Validate driver credentials (phone/email + passcode)
+   * Returns the driver document if valid, throws UnauthorizedException if invalid
+   */
+  async validateDriver(
+    phoneOrEmail: string,
+    passcode: string,
+  ): Promise<DriverDocument> {
+    // Find driver by phone or email
+    const driver = await this.driverModel.findOne({
+      $or: [
+        { phone: phoneOrEmail },
+        { email: phoneOrEmail },
+      ],
+      isDeleted: false,
+    }).exec();
+
+    if (!driver || !driver.isActive) {
+      throw new UnauthorizedException('Invalid phone/email or passcode');
+    }
+
+    // Compare provided passcode with stored hashed passcode
+    const isValid = await bcrypt.compare(passcode, driver.passcode);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid phone/email or passcode');
+    }
+
+    return driver;
   }
 
 }

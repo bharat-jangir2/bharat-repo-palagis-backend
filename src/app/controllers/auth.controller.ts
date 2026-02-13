@@ -42,7 +42,21 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Request() req) {
-    await this.authService.logout(req.user.deviceId);
+    // Try to get deviceId from authenticated user, but don't fail if token is invalid
+    const deviceId = req.user?.deviceId;
+
+    // If we have deviceId, invalidate tokens
+    // If token is invalid/missing, we still return success (idempotent logout)
+    if (deviceId) {
+      try {
+        await this.authService.logout(deviceId);
+      } catch (error) {
+        // Even if logout fails (e.g., tokens already deleted), return success
+        // This makes logout idempotent
+      }
+    }
+
+    // Always return success, even if token was invalid or tokens not found
     return {
       userMessage: 'Logged out successfully',
       userMessageCode: 'LOGOUT_SUCCESS',

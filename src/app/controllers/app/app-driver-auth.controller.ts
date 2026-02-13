@@ -9,27 +9,31 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { SuperAdminAuthService } from '../../services/super-admin-auth.service';
-import { SuperAdminLoginDto } from '../../dtos/super-admin-login.dto';
-import { SuperAdminChangePasswordDto } from '../../dtos/super-admin-change-password.dto';
+import { DriverAuthService } from '../../services/driver-auth.service';
+import { DriverLoginDto } from '../../dtos/driver-login.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { DeviceType } from '../../entities/token.entity';
 
-@Controller('super-admin/auth')
-export class SuperAdminAuthController {
+@Controller('app/driver/auth')
+export class AppDriverAuthController {
   constructor(
-    private readonly superAdminAuthService: SuperAdminAuthService,
+    private readonly driverAuthService: DriverAuthService,
   ) {}
 
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
-    @Body() dto: SuperAdminLoginDto,
+    @Body() dto: DriverLoginDto,
     @Headers('x-device-id') deviceId: string,
     @Headers('x-device-type') deviceType: string,
   ) {
+    // Validate phone or email is provided
+    if (!dto.phone && !dto.email) {
+      throw new UnauthorizedException('Either phone or email is required');
+    }
+
     if (!deviceId || !deviceType) {
       throw new UnauthorizedException(
         'Device ID and Device Type are required in headers',
@@ -40,13 +44,11 @@ export class SuperAdminAuthController {
       throw new UnauthorizedException('Invalid device type');
     }
 
-    return await this.superAdminAuthService.login({
+    return await this.driverAuthService.login({
       ...dto,
       deviceId,
       deviceType: deviceType as DeviceType,
     });
-
-    
   }
 
   @UseGuards(JwtAuthGuard)
@@ -59,12 +61,13 @@ export class SuperAdminAuthController {
   ) {
     // Try to get userId from authenticated user, but don't fail if token is invalid
     const userId = req.user?.userId;
+    const userType = req.user?.userType;
 
-    // If we have userId and deviceId, invalidate tokens
+    // If we have userId and it's a driver, invalidate tokens
     // If token is invalid/missing, we still return success (idempotent logout)
-    if (userId && deviceId) {
+    if (userId && userType === 'DRIVER' && deviceId) {
       try {
-        await this.superAdminAuthService.logout(userId, deviceId);
+        await this.driverAuthService.logout(userId, deviceId);
       } catch (error) {
         // Even if logout fails (e.g., tokens already deleted), return success
         // This makes logout idempotent
@@ -78,27 +81,4 @@ export class SuperAdminAuthController {
       developerMessage: 'Logged out successfully',
     };
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  async changePassword(
-    @Request() req,
-    @Body() dto: SuperAdminChangePasswordDto,
-  ) {
-    const { userId } = req.user;
-
-    if (!userId) {
-      throw new UnauthorizedException('Invalid super admin token');
-    }
-
-    await this.superAdminAuthService.changePassword(userId, dto);
-    return {
-      userMessage:
-        'Password changed successfully. All sessions have been logged out.',
-      userMessageCode: 'PASSWORD_CHANGED',
-      developerMessage: 'Password changed and all tokens invalidated',
-    };
-  }
 }
-
