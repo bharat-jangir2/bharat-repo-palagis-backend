@@ -30,8 +30,4 @@ export class CreateTruckDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isOnline?: boolean;
 }

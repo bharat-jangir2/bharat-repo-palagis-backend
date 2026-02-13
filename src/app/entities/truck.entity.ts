@@ -51,9 +51,6 @@ export class Truck {
   isActive: boolean; // Status field from form
 
   @Prop({ default: false })
-  isOnline: boolean;
-
-  @Prop({ default: false })
   isDeleted: boolean;
 
   createdAt: Date;

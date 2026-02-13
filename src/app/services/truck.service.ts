@@ -69,7 +69,6 @@ export class TruckService {
       truckName: createTruckDto.truckName,
       driverId: createTruckDto.driverId ? new Types.ObjectId(createTruckDto.driverId) : undefined,
       isActive: createTruckDto.isActive ?? true,
-      isOnline: createTruckDto.isOnline ?? false,
       isDeleted: false,
     };
 
@@ -104,7 +103,6 @@ export class TruckService {
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isActive: 1,
-          isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -118,39 +116,86 @@ export class TruckService {
   async findAll(
     page: number = 1,
     limit: number = 10,
+    status?: string,
+    search?: string,
   ) {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
 
-    const result = await this.truckModel.aggregate([
-      { $match: { isDeleted: false } },
-      {
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limitNumber },
-            {
-              $project: {
-                truckCode: 1,
-                vehicleNumber: 1,
-                truckName: 1,
-                vehicleModel: 1,
-                licensePlate: 1,
-                driverId: { $toString: '$driverId' },
-                location: 1,
-                isActive: 1,
-                isOnline: 1,
-                isDeleted: 1,
-                createdAt: 1,
-                updatedAt: 1,
-              },
-            },
-          ],
-          total: [{ $count: 'count' }],
+    // Build match conditions
+    const matchConditions: any = { isDeleted: false };
+
+    // Filter by status (active/inactive) - only if status is provided and not empty
+    if (status && status.trim() === 'active') {
+      matchConditions.isActive = true;
+    } else if (status && status.trim() === 'inactive') {
+      matchConditions.isActive = false;
+    }
+
+    // Build aggregation pipeline
+    const pipeline: any[] = [
+      { $match: matchConditions },
+    ];
+
+    // If search is provided, join with Driver collection and filter
+    // Search is already sanitized in DTO, but we'll double-check here
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      // Additional sanitization - escape any remaining special characters
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'drivers',
+            localField: 'driverId',
+            foreignField: '_id',
+            as: 'driver',
+            pipeline: [
+              { $match: { isDeleted: false } },
+            ],
+          },
         },
+        {
+          $match: {
+            $or: [
+              { truckName: searchRegex },
+              { 'driver.email': searchRegex },
+              { 'driver.phone': searchRegex },
+            ],
+          },
+        },
+      );
+    }
+
+    // Add pagination and projection
+    pipeline.push({
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limitNumber },
+          {
+            $project: {
+              truckCode: 1,
+              vehicleNumber: 1,
+              truckName: 1,
+              vehicleModel: 1,
+              licensePlate: 1,
+              driverId: { $toString: '$driverId' },
+              location: 1,
+              isActive: 1,
+              isDeleted: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
       },
-    ]);
+    });
+
+    const result = await this.truckModel.aggregate(pipeline);
 
     const totalItems = result[0]?.total[0]?.count || 0;
     const totalPages = Math.ceil(totalItems / limitNumber);
@@ -180,7 +225,6 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
-          isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -244,7 +288,6 @@ export class TruckService {
       updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
     }
     if (updateTruckDto.isActive !== undefined) updateData.isActive = updateTruckDto.isActive;
-    if (updateTruckDto.isOnline !== undefined) updateData.isOnline = updateTruckDto.isOnline;
     
     // Handle location update if coordinates provided
     if (updateTruckDto.coordinates) {
@@ -282,7 +325,6 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
-          isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -335,7 +377,6 @@ export class TruckService {
           driverId: { $toString: '$driverId' },
           location: 1,
           isActive: 1,
-          isOnline: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,

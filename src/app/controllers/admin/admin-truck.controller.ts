@@ -14,7 +14,7 @@ import {
 import { TruckService } from '../../services/truck.service';
 import { CreateTruckDto } from '../../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../../dtos/update-truck.dto';
-import { PaginationDto } from '../../dtos/pagination.dto';
+import { TruckFilterDto } from '../../dtos/truck-filter.dto';
 import { Public } from 'src/app/decorators/public.decorator';
 
 @Controller('admin/trucks')
@@ -38,9 +38,14 @@ export class AdminTruckController {
   @Get()
   @Version('1')
   async getAllTrucks(
-    @Query() paginationDto: PaginationDto,
+    @Query() filterDto: TruckFilterDto,
   ) {
-    return this.truckService.findAll(paginationDto.page, paginationDto.limit);
+    return this.truckService.findAll(
+      filterDto.page,
+      filterDto.limit,
+      filterDto.status,
+      filterDto.search,
+    );
   }
 
   @Get(':id')

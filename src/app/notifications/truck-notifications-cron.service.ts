@@ -27,10 +27,10 @@ export class TruckNotificationsCronService {
     this.logger.log('Starting cron: sendNearbyTruckNotifications');
 
     try {
-      // 1. Load active, online trucks that are not deleted
+      // 1. Load active trucks that are not deleted
       const trucks = await this.truckModel.find({
         isDeleted: false,
-        isOnline: true,
+        isActive: true,
       }).lean();
 
       if (!trucks || trucks.length === 0) {

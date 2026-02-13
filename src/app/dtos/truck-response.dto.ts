@@ -13,7 +13,6 @@ export class TruckResponseDto {
   latitude?: number;
   longitude?: number;
   isActive: boolean;
-  isOnline: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
