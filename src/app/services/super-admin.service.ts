@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -82,6 +83,40 @@ export class SuperAdminService {
     const hashed = await bcrypt.hash(newPassword, 10);
     admin.password = hashed;
     await admin.save();
+  }
+
+  async getProfile(id: string): Promise<Omit<SuperAdminDocument, 'password'>> {
+    const admin = await this.findById(id);
+    
+    // Return profile without password
+    const { password, ...profile } = admin.toObject();
+    return profile as any;
+  }
+
+  async updateProfile(
+    id: string,
+    email?: string,
+    fullName?: string,
+  ): Promise<SuperAdminDocument> {
+    const admin = await this.findById(id);
+
+    // Check if email is being updated and if it conflicts with another admin
+    if (email && email !== admin.email) {
+      const existingAdmin = await this.superAdminModel
+        .findOne({ email, isDeleted: false, _id: { $ne: admin._id } })
+        .exec();
+
+      if (existingAdmin) {
+        throw new ConflictException('Email already exists');
+      }
+      admin.email = email;
+    }
+
+    if (fullName) {
+      admin.fullName = fullName;
+    }
+
+    return admin.save();
   }
 }
 

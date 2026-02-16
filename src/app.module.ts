@@ -49,6 +49,7 @@ import {
 import { SuperAdminService } from './app/services/super-admin.service';
 import { SuperAdminAuthService } from './app/services/super-admin-auth.service';
 import { SuperAdminAuthController } from './app/controllers/admin/super-admin-auth.controller';
+import { SuperAdminProfileController } from './app/controllers/admin/super-admin-profile.controller';
 import { DriverAuthService } from './app/services/driver-auth.service';
 
 const logger = new Logger('Database');
@@ -119,6 +120,7 @@ const logger = new Logger('Database');
     AdminTruckController,
     AdminDriverController,
     SuperAdminAuthController,
+    SuperAdminProfileController,
   ],
   providers: [
     AppService,
