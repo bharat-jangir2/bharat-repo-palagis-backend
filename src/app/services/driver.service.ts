@@ -125,6 +125,25 @@ export class DriverService {
 
     const result = await this.driverModel.aggregate([
       { $match: { isDeleted: false } },
+      // Always lookup truck
+      {
+        $lookup: {
+          from: 'trucks',
+          localField: 'truckId',
+          foreignField: '_id',
+          as: 'truck',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind truck array to object (preserve null for drivers without trucks)
+      {
+        $unwind: {
+          path: '$truck',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $facet: {
           data: [
@@ -138,11 +157,28 @@ export class DriverService {
                 phone: 1,
                 licenseNumber: 1,
                 address: 1,
-                truckId: { $toString: '$truckId' },
+                truck: {
+                  $cond: {
+                    if: { $ifNull: ['$truck._id', false] },
+                    then: {
+                      _id: { $toString: '$truck._id' },
+                      truckCode: '$truck.truckCode',
+                      vehicleNumber: '$truck.vehicleNumber',
+                      truckName: '$truck.truckName',
+                      vehicleModel: '$truck.vehicleModel',
+                      licensePlate: '$truck.licensePlate',
+                      location: '$truck.location',
+                      truckStatus: '$truck.truckStatus',
+                      isActive: '$truck.isActive',
+                    },
+                    else: null,
+                  },
+                },
                 isActive: 1,
+                driverStatus: 1,
                 isDeleted: 1,
                 createdAt: 1,
-                updatedAt: 1, 
+                updatedAt: 1,
               },
             },
           ],
@@ -168,6 +204,25 @@ export class DriverService {
   async findOne(id: string) {
     const result = await this.driverModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+      // Lookup truck
+      {
+        $lookup: {
+          from: 'trucks',
+          localField: 'truckId',
+          foreignField: '_id',
+          as: 'truck',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind truck array to object
+      {
+        $unwind: {
+          path: '$truck',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -176,7 +231,23 @@ export class DriverService {
           phone: 1,
           licenseNumber: 1,
           address: 1,
-          truckId: { $toString: '$truckId' },
+          truck: {
+            $cond: {
+              if: { $ifNull: ['$truck._id', false] },
+              then: {
+                _id: { $toString: '$truck._id' },
+                truckCode: '$truck.truckCode',
+                vehicleNumber: '$truck.vehicleNumber',
+                truckName: '$truck.truckName',
+                vehicleModel: '$truck.vehicleModel',
+                licensePlate: '$truck.licensePlate',
+                location: '$truck.location',
+                truckStatus: '$truck.truckStatus',
+                isActive: '$truck.isActive',
+              },
+              else: null,
+            },
+          },
           isActive: 1,
           driverStatus: 1,
           isDeleted: 1,
@@ -275,6 +346,25 @@ export class DriverService {
 
     const result = await this.driverModel.aggregate([
       { $match: { _id: driver._id } },
+      // Lookup truck
+      {
+        $lookup: {
+          from: 'trucks',
+          localField: 'truckId',
+          foreignField: '_id',
+          as: 'truck',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind truck array to object
+      {
+        $unwind: {
+          path: '$truck',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -283,7 +373,23 @@ export class DriverService {
           phone: 1,
           licenseNumber: 1,
           address: 1,
-          truckId: { $toString: '$truckId' },
+          truck: {
+            $cond: {
+              if: { $ifNull: ['$truck._id', false] },
+              then: {
+                _id: { $toString: '$truck._id' },
+                truckCode: '$truck.truckCode',
+                vehicleNumber: '$truck.vehicleNumber',
+                truckName: '$truck.truckName',
+                vehicleModel: '$truck.vehicleModel',
+                licensePlate: '$truck.licensePlate',
+                location: '$truck.location',
+                truckStatus: '$truck.truckStatus',
+                isActive: '$truck.isActive',
+              },
+              else: null,
+            },
+          },
           isActive: 1,
           driverStatus: 1,
           isDeleted: 1,
@@ -314,6 +420,25 @@ export class DriverService {
 
     const result = await this.driverModel.aggregate([
       { $match: { _id: driver._id } },
+      // Lookup truck
+      {
+        $lookup: {
+          from: 'trucks',
+          localField: 'truckId',
+          foreignField: '_id',
+          as: 'truck',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind truck array to object
+      {
+        $unwind: {
+          path: '$truck',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -322,7 +447,23 @@ export class DriverService {
           phone: 1,
           licenseNumber: 1,
           address: 1,
-          truckId: { $toString: '$truckId' },
+          truck: {
+            $cond: {
+              if: { $ifNull: ['$truck._id', false] },
+              then: {
+                _id: { $toString: '$truck._id' },
+                truckCode: '$truck.truckCode',
+                vehicleNumber: '$truck.vehicleNumber',
+                truckName: '$truck.truckName',
+                vehicleModel: '$truck.vehicleModel',
+                licensePlate: '$truck.licensePlate',
+                location: '$truck.location',
+                truckStatus: '$truck.truckStatus',
+                isActive: '$truck.isActive',
+              },
+              else: null,
+            },
+          },
           isActive: 1,
           driverStatus: 1,
           isDeleted: 1,
