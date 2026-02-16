@@ -14,6 +14,7 @@ import {
 import { TruckService } from '../../services/truck.service';
 import { CreateTruckDto } from '../../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../../dtos/update-truck.dto';
+import { UpdateTruckStatusDto } from '../../dtos/update-truck-status.dto';
 import { TruckFilterDto } from '../../dtos/truck-filter.dto';
 import { Public } from 'src/app/decorators/public.decorator';
 
@@ -66,7 +67,19 @@ export class AdminTruckController {
   @Delete(':id')
   @Version('1')
   async deleteTruck(@Param('id') id: string) {
-    await this.truckService.remove(id);
-    return { message: 'Truck deleted successfully' };
+    return await this.truckService.deleteTruck(id);
+   
+  }
+
+
+  @Post(':truckId/update-status')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateTruckStatus(
+    @Param('truckId') truckId: string,
+    @Body() updateTruckStatusDto: UpdateTruckStatusDto,
+  ) {
+    return await this.truckService.updateTruckStatus(truckId, updateTruckStatusDto.truckStatus);
+    
   }
 }

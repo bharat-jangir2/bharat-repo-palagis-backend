@@ -420,7 +420,51 @@ export class TruckService {
     return result[0];
   }
 
-  async remove(id: string): Promise<void> {
+  async updateTruckStatus(id: string, truckStatus: TruckStatus) {
+    const truck = await this.truckModel
+      .findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        { truckStatus },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      )
+      .exec();
+
+    if (!truck) {
+      throw new NotFoundException(`Truck with ID ${id} not found`);
+    }
+
+    const result = await this.truckModel.aggregate([
+      { $match: { _id: truck._id } },
+      {
+        $project: {
+          _id: 1,
+          truckCode: 1,
+          vehicleNumber: 1,
+          vehicleModel: 1,
+          licensePlate: 1,
+          driverId: { $toString: '$driverId' },
+          location: 1,
+          isActive: 1,
+          truckStatus: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+
+    return {
+      userMessage: 'Truck status updated successfully',
+      userMessageCode: 'TRUCK_STATUS_UPDATED',
+      developerMessage: `Truck status updated to ${truckStatus}`,
+      result: result[0],
+    };
+  }
+
+  async deleteTruck(id: string): Promise<any> {
     const truck = await this.truckModel.findOne({ 
       _id: id, 
       isDeleted: false 
@@ -434,6 +478,11 @@ export class TruckService {
     await this.truckModel.findByIdAndUpdate(id, {
       isDeleted: true,
     }).exec();
+    return {
+      userMessage: 'Truck deleted successfully',
+      userMessageCode: 'TRUCK_DELETED',
+      developerMessage: `Truck with ID ${id} deleted successfully`,
+    }
   }
 
   // Find trucks near a location (for proximity queries)
