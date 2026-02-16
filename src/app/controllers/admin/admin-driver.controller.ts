@@ -14,6 +14,7 @@ import {
 import { DriverService } from '../../services/driver.service';
 import { CreateDriverDto } from '../../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../../dtos/update-driver.dto';
+import { UpdateDriverStatusDto } from '../../dtos/update-driver-status.dto';
 import { PaginationDto } from '../../dtos/pagination.dto';
 
 @Controller('admin/drivers')
@@ -76,6 +77,22 @@ export class AdminDriverController {
       userMessage: 'Driver deleted successfully',
       userMessageCode: 'DRIVER_DELETED',
       developerMessage: `Driver deleted successfully`,
+    };
+  }
+
+  @Post(':driverId/update-status')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateDriverStatus(
+    @Param('driverId') driverId: string,
+    @Body() updateDriverStatusDto: UpdateDriverStatusDto,
+  ) {
+    const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.driverStatus);
+    return {
+      ...driver,
+      userMessage: 'Driver status updated successfully',
+      userMessageCode: 'DRIVER_STATUS_UPDATED',
+      developerMessage: `Driver status updated to ${updateDriverStatusDto.driverStatus}`,
     };
   }
 }

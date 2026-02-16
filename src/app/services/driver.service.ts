@@ -296,6 +296,45 @@ export class DriverService {
     return result[0];
   }
 
+  async updateStatus(id: string, driverStatus: DriverStatus) {
+    const driver = await this.driverModel
+      .findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        { driverStatus },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      )
+      .exec();
+
+    if (!driver) {
+      throw new NotFoundException(`Driver with ID ${id} not found`);
+    }
+
+    const result = await this.driverModel.aggregate([
+      { $match: { _id: driver._id } },
+      {
+        $project: {
+          _id: 1,
+          fullName: 1,
+          email: 1,
+          phone: 1,
+          licenseNumber: 1,
+          address: 1,
+          truckId: { $toString: '$truckId' },
+          isActive: 1,
+          driverStatus: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+
+    return result[0];
+  }
+
   async remove(id: string): Promise<void> {
     const driver = await this.driverModel.findOne({ 
       _id: id, 
