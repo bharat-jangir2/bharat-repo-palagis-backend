@@ -95,6 +95,25 @@ export class TruckService {
     
     const result = await this.truckModel.aggregate([
       { $match: { _id: createdTruck._id } },
+      // Lookup driver
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array to object
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 0,
@@ -103,7 +122,22 @@ export class TruckService {
           vehicleNumber: 1,
           vehicleModel: 1,
           licensePlate: 1,
-          driverId: { $toString: '$driverId' },
+          driver: {
+            $cond: {
+              if: { $ifNull: ['$driver._id', false] },
+              then: {
+                _id: { $toString: '$driver._id' },
+                fullName: '$driver.fullName',
+                email: '$driver.email',
+                phone: '$driver.phone',
+                licenseNumber: '$driver.licenseNumber',
+                address: '$driver.address',
+                isActive: '$driver.isActive',
+                driverStatus: '$driver.driverStatus',
+              },
+              else: null,
+            },
+          },
           location: 1,
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
@@ -399,6 +433,25 @@ export class TruckService {
 
     const result = await this.truckModel.aggregate([
       { $match: { _id: truck._id } },
+      // Lookup driver
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array to object
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -406,11 +459,24 @@ export class TruckService {
           vehicleNumber: 1,
           vehicleModel: 1,
           licensePlate: 1,
-          driverId: { $toString: '$driverId' },
+          driver: {
+            $cond: {
+              if: { $ifNull: ['$driver._id', false] },
+              then: {
+                _id: { $toString: '$driver._id' },
+                fullName: '$driver.fullName',
+                email: '$driver.email',
+                phone: '$driver.phone',
+                licenseNumber: '$driver.licenseNumber',
+                address: '$driver.address',
+                isActive: '$driver.isActive',
+                driverStatus: '$driver.driverStatus',
+              },
+              else: null,
+            },
+          },
           location: 1,
-          isActive: 1,
           truckStatus: 1,
-          isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -438,6 +504,25 @@ export class TruckService {
 
     const result = await this.truckModel.aggregate([
       { $match: { _id: truck._id } },
+      // Lookup driver
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array to object
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -445,11 +530,24 @@ export class TruckService {
           vehicleNumber: 1,
           vehicleModel: 1,
           licensePlate: 1,
-          driverId: { $toString: '$driverId' },
+          driver: {
+            $cond: {
+              if: { $ifNull: ['$driver._id', false] },
+              then: {
+                _id: { $toString: '$driver._id' },
+                fullName: '$driver.fullName',
+                email: '$driver.email',
+                phone: '$driver.phone',
+                licenseNumber: '$driver.licenseNumber',
+                address: '$driver.address',
+                isActive: '$driver.isActive',
+                driverStatus: '$driver.driverStatus',
+              },
+              else: null,
+            },
+          },
           location: 1,
-          isActive: 1,
           truckStatus: 1,
-          isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
         },
