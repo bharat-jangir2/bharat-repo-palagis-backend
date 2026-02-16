@@ -1,4 +1,4 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -43,7 +43,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     // For other endpoints, use default behavior (throw if auth fails)
     if (err || !user) {
-      throw err || new Error('Unauthorized');
+      throw err || new UnauthorizedException('Unauthorized - Invalid or missing token');
     }
     return user;
   }

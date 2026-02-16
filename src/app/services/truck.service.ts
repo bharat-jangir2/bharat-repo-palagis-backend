@@ -225,6 +225,9 @@ export class TruckService {
     const totalPages = Math.ceil(totalItems / limitNumber);
 
     return {
+      userMessage: '',
+      userMessageCode: 'TRUCKS_FETCHED',
+      developerMessage: 'Trucks fetched successfully',
       result: result[0]?.data || [],
       pagination: {
         page: pageNumber,
