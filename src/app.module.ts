@@ -9,12 +9,16 @@ import { ScheduleModule } from '@nestjs/schedule';
 import databaseConfig from './app/config/database.config';
 import firebaseConfig from './app/config/firebase.config';
 import jwtConfig from './app/config/jwt.config';
-import { AppController } from './app/controllers/app/app.controller';
+// User App Controllers
+import { UserController } from './app/controllers/users/user.controller';
+import { UserTruckController } from './app/controllers/users/user-truck.controller';
+import { UserDriverController } from './app/controllers/users/user-driver.controller';
+import { UserDeviceController } from './app/controllers/users/user-device.controller';
+// Driver App Controllers
+import { DriverAuthController } from './app/controllers/drivers/driver-auth.controller';
+// Admin Controllers
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
-import { AppTruckController } from './app/controllers/app/app-truck.controller';
-import { AppDriverController } from './app/controllers/app/app-driver.controller';
-import { AppDriverAuthController } from './app/controllers/app/app-driver-auth.controller';
 import { AppService } from './app/services/app.service';
 import { TruckService } from './app/services/truck.service';
 import { DriverService } from './app/services/driver.service';
@@ -32,14 +36,11 @@ import { LoggingInterceptor } from './app/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './app/interceptors/response-transform.interceptor';
 import { NotificationsModule } from './app/notifications/notifications.module';
 import { JwtStrategy } from './app/strategies/jwt.strategy';
-import { AuthService } from './app/services/auth.service';
 import { TokenService } from './app/services/token.service';
 import { CounterService } from './app/services/counter.service';
 import { JwtAuthGuard } from './app/guards/jwt-auth.guard';
-import { AuthController } from './app/controllers/auth.controller';
 import { Device, DeviceSchema } from './app/entities/device.entity';
 import { DeviceService } from './app/services/device.service';
-import { AppDeviceController } from './app/controllers/app/app-device.controller';
 import {
   SuperAdmin,
   SuperAdminSchema,
@@ -105,17 +106,16 @@ const logger = new Logger('Database');
     NotificationsModule,
   ],
   controllers: [
-    // Auth Controller
-    AuthController,
-    // App Controllers (Mobile App - Read-only)
-    AppController,
-    AppTruckController,
-    AppDriverController,
-    AppDriverAuthController,
+    // User App Controllers (User-facing mobile app)
+    UserController,
+    UserTruckController,
+    UserDriverController,
+    UserDeviceController,
+    // Driver App Controllers (Driver-facing mobile app)
+    DriverAuthController,
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,
-    AppDeviceController,
     SuperAdminAuthController,
   ],
   providers: [
@@ -130,7 +130,6 @@ const logger = new Logger('Database');
     DriverAuthService,
     // Auth providers
     JwtStrategy,
-    AuthService,
     TokenService,
     JwtAuthGuard,
     {

@@ -8,21 +8,27 @@ import {
 import { TruckService } from '../../services/truck.service';
 import { PaginationDto } from '../../dtos/pagination.dto';
 import { FindNearDto } from '../../dtos/find-near.dto';
+import { Public } from '../../decorators/public.decorator';
 
-@Controller('app/trucks')
-export class AppTruckController {
+@Controller('users/trucks')
+export class UserTruckController {
   constructor(private readonly truckService: TruckService) {}
 
   @Get()
   @Version('1')
+  @Public()
   async getAllTrucks(
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.truckService.findAll(paginationDto.page, paginationDto.limit);
+    return this.truckService.findAllTrucks(
+      paginationDto.page,
+      paginationDto.limit,
+    );
   }
 
   @Get('nearby')
   @Version('1')
+  @Public()
   async getTrucksNear(
     @Query() findNearDto: FindNearDto,
   ) {
@@ -35,6 +41,7 @@ export class AppTruckController {
 
   @Get(':id')
   @Version('1')
+  @Public()
   async getTruck(@Param('id') id: string) {
     return this.truckService.findOne(id);
   }

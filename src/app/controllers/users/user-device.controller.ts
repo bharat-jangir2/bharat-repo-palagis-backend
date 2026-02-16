@@ -3,8 +3,8 @@ import { DeviceService } from '../../services/device.service';
 import { RegisterDeviceDto } from '../../dtos/register-device-dto';
 import { Public } from '../../decorators/public.decorator';
 
-@Controller('app/devices')
-export class AppDeviceController {
+@Controller('users/devices')
+export class UserDeviceController {
   constructor(private readonly deviceService: DeviceService) {}
 
   @Public()

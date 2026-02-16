@@ -3,7 +3,7 @@ import { AppService } from '../../services/app.service';
 import { Public } from '../../decorators/public.decorator';
 
 @Controller('health')
-export class AppController {
+export class UserController {
   constructor(private readonly appService: AppService) {}
 
   @Public()

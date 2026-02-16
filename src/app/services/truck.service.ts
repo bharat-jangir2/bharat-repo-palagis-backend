@@ -115,7 +115,7 @@ export class TruckService {
     return result[0];
   }
 
-  async findAll(
+  async findAllTrucks(
     page: number = 1,
     limit: number = 10,
     status?: string,
@@ -138,37 +138,45 @@ export class TruckService {
     // Build aggregation pipeline
     const pipeline: any[] = [
       { $match: matchConditions },
+      // Always lookup driver
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array to object (preserve null for trucks without drivers)
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
     ];
 
-    // If search is provided, join with Driver collection and filter
-    // Search is already sanitized in DTO, but we'll double-check here
+    // If search is provided, add search matching after lookup/unwind
     if (search && typeof search === 'string' && search.trim().length > 0) {
       // Additional sanitization - escape any remaining special characters
       const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
       
-      pipeline.push(
-        {
-          $lookup: {
-            from: 'drivers',
-            localField: 'driverId',
-            foreignField: '_id',
-            as: 'driver',
-            pipeline: [
-              { $match: { isDeleted: false } },
-            ],
-          },
+      pipeline.push({
+        $match: {
+          $or: [
+            { truckName: searchRegex },
+            { vehicleNumber: searchRegex },
+            { licensePlate: searchRegex },
+            { 'driver.email': searchRegex },
+            { 'driver.phone': searchRegex },
+            { 'driver.fullName': searchRegex },
+          ],
         },
-        {
-          $match: {
-            $or: [
-              { truckName: searchRegex },
-              { 'driver.email': searchRegex },
-              { 'driver.phone': searchRegex },
-            ],
-          },
-        },
-      );
+      });
     }
 
     // Add pagination and projection
@@ -184,10 +192,24 @@ export class TruckService {
               truckName: 1,
               vehicleModel: 1,
               licensePlate: 1,
-              driverId: { $toString: '$driverId' },
+              driver: {
+                $cond: {
+                  if: { $ifNull: ['$driver._id', false] },
+                  then: {
+                    _id: { $toString: '$driver._id' },
+                    fullName: '$driver.fullName',
+                    email: '$driver.email',
+                    phone: '$driver.phone',
+                    licenseNumber: '$driver.licenseNumber',
+                    address: '$driver.address',
+                    isActive: '$driver.isActive',
+                    driverStatus: '$driver.driverStatus',
+                  },
+                  else: null,
+                },
+              },
               location: 1,
-              isActive: 1,
-              isDeleted: 1,
+              truckStatus: 1,
               createdAt: 1,
               updatedAt: 1,
             },
@@ -216,6 +238,25 @@ export class TruckService {
   async findOne(id: string) {
     const result = await this.truckModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+      // Lookup driver
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array to object
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -224,11 +265,24 @@ export class TruckService {
           truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
-          driverId: { $toString: '$driverId' },
+          driver: {
+            $cond: {
+              if: { $ifNull: ['$driver._id', false] },
+              then: {
+                _id: { $toString: '$driver._id' },
+                fullName: '$driver.fullName',
+                email: '$driver.email',
+                phone: '$driver.phone',
+                licenseNumber: '$driver.licenseNumber',
+                address: '$driver.address',
+                isActive: '$driver.isActive',
+                driverStatus: '$driver.driverStatus',
+              },
+              else: null,
+            },
+          },
           location: 1,
-          isActive: 1,
           truckStatus: 1,
-          isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -379,11 +433,24 @@ export class TruckService {
           truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
-          driverId: { $toString: '$driverId' },
+          driver: {
+            $cond: {
+              if: { $ifNull: ['$driver._id', false] },
+              then: {
+                _id: { $toString: '$driver._id' },
+                fullName: '$driver.fullName',
+                email: '$driver.email',
+                phone: '$driver.phone',
+                licenseNumber: '$driver.licenseNumber',
+                address: '$driver.address',
+                isActive: '$driver.isActive',
+                driverStatus: '$driver.driverStatus',
+              },
+              else: null,
+            },
+          },
           location: 1,
-          isActive: 1,
           truckStatus: 1,
-          isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
         },

@@ -16,8 +16,8 @@ import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { DeviceType } from '../../entities/token.entity';
 
-@Controller('app/driver/auth')
-export class AppDriverAuthController {
+@Controller('drivers/auth')
+export class DriverAuthController {
   constructor(
     private readonly driverAuthService: DriverAuthService,
   ) {}

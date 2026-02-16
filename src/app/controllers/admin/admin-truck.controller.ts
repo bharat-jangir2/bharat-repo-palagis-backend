@@ -40,7 +40,7 @@ export class AdminTruckController {
   async getAllTrucks(
     @Query() filterDto: TruckFilterDto,
   ) {
-    return this.truckService.findAll(
+    return this.truckService.findAllTrucks(
       filterDto.page,
       filterDto.limit,
       filterDto.status,

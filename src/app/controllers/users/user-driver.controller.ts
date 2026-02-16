@@ -8,8 +8,8 @@ import {
 import { DriverService } from '../../services/driver.service';
 import { PaginationDto } from '../../dtos/pagination.dto';
 
-@Controller('app/drivers')
-export class AppDriverController {
+@Controller('users/drivers')
+export class UserDriverController {
   constructor(private readonly driverService: DriverService) {}
 
   @Get()
