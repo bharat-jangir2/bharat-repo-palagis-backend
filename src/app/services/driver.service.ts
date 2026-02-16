@@ -61,12 +61,10 @@ export class DriverService {
       fullName: createDriverDto.fullName,
       email: createDriverDto.email,
       phone: createDriverDto.phone,
-      licenseNumber: createDriverDto.licenseNumber,
-      address: createDriverDto.address,
       truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
       passcode: hashedPasscode,
-      isActive: createDriverDto.isActive ?? true,
-      driverStatus: createDriverDto.driverStatus ?? DriverStatus.ACTIVE,
+      isActive: true, // Default to active
+      driverStatus: createDriverDto.driverStatus,
       isDeleted: false,
     });
 
@@ -232,13 +230,10 @@ export class DriverService {
     if (updateDriverDto.fullName !== undefined) updateData.fullName = updateDriverDto.fullName;
     if (updateDriverDto.email !== undefined) updateData.email = updateDriverDto.email;
     if (updateDriverDto.phone !== undefined) updateData.phone = updateDriverDto.phone;
-    if (updateDriverDto.licenseNumber !== undefined) updateData.licenseNumber = updateDriverDto.licenseNumber;
-    if (updateDriverDto.address !== undefined) updateData.address = updateDriverDto.address;
+    if (updateDriverDto.driverStatus !== undefined) updateData.driverStatus = updateDriverDto.driverStatus;
     if (updateDriverDto.truckId !== undefined) {
       updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
     }
-    if (updateDriverDto.isActive !== undefined) updateData.isActive = updateDriverDto.isActive;
-    if (updateDriverDto.driverStatus !== undefined) updateData.driverStatus = updateDriverDto.driverStatus;
 
     const driver = await this.driverModel
       .findOneAndUpdate(

@@ -1,10 +1,24 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateTruckDto } from './create-truck.dto';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsMongoId, IsEnum } from 'class-validator';
+import { TruckStatus } from '../entities/truck.entity';
 
-export class UpdateTruckDto extends PartialType(CreateTruckDto) {
-  // Allow truckCode in DTO but it will be ignored in service
+export class UpdateTruckDto {
   @IsOptional()
   @IsString()
-  truckCode?: string; // Read-only field - will be ignored during update
+  vehicleNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  licensePlate?: string;
+
+  @IsOptional()
+  @IsEnum(TruckStatus)
+  truckStatus?: TruckStatus;
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  driverId?: string;
 }

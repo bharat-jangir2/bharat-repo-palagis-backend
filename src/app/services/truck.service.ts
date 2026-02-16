@@ -65,25 +65,21 @@ export class TruckService {
       truckCode,
       vehicleNumber: createTruckDto.vehicleNumber,
       licensePlate: createTruckDto.licensePlate,
-      vehicleModel: createTruckDto.vehicleModel,
-      truckName: createTruckDto.truckName,
-      driverId: createTruckDto.driverId ? new Types.ObjectId(createTruckDto.driverId) : undefined,
-      isActive: createTruckDto.isActive ?? true,
-      truckStatus: createTruckDto.truckStatus ?? TruckStatus.ACTIVE,
+      truckStatus: createTruckDto.truckStatus,
+      isActive: true, // Default to active
       isDeleted: false,
-    };
-
-    // Add location only if coordinates provided
-    if (createTruckDto.coordinates) {
-      truckData.location = {
-        type: 'Point',
-        coordinates: createTruckDto.coordinates, // [longitude, latitude]
-      };
-    } else {
-      truckData.location = {
+      location: {
         type: 'Point',
         coordinates: [0, 0], // Default location
-      };
+      },
+    };
+
+    // Optional fields
+    if (createTruckDto.vehicleModel) {
+      truckData.vehicleModel = createTruckDto.vehicleModel;
+    }
+    if (createTruckDto.driverId) {
+      truckData.driverId = new Types.ObjectId(createTruckDto.driverId);
     }
 
     const createdTruck = await this.truckModel.create(truckData);
@@ -105,7 +101,6 @@ export class TruckService {
           id: { $toString: '$_id' },
           truckCode: 1,
           vehicleNumber: 1,
-          truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
           driverId: { $toString: '$driverId' },
@@ -176,14 +171,15 @@ export class TruckService {
       
       pipeline.push({
         $match: {
-          $or: [
-            { truckName: searchRegex },
-            { vehicleNumber: searchRegex },
-            { licensePlate: searchRegex },
-            { 'driver.email': searchRegex },
-            { 'driver.phone': searchRegex },
-            { 'driver.fullName': searchRegex },
-          ],
+            $or: [
+              { vehicleNumber: searchRegex },
+              { licensePlate: searchRegex },
+              { vehicleModel: searchRegex },
+              { truckCode: searchRegex },
+              { 'driver.email': searchRegex },
+              { 'driver.phone': searchRegex },
+              { 'driver.fullName': searchRegex },
+            ],
         },
       });
     }
@@ -274,7 +270,6 @@ export class TruckService {
           _id: 1,
           truckCode: 1,
           vehicleNumber: 1,
-          truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
           driver: {
@@ -357,21 +352,11 @@ export class TruckService {
     // Build update object, only including provided fields
     const updateData: any = {};
     if (updateTruckDto.vehicleNumber !== undefined) updateData.vehicleNumber = updateTruckDto.vehicleNumber;
-    if (updateTruckDto.truckName !== undefined) updateData.truckName = updateTruckDto.truckName;
-    if (updateTruckDto.vehicleModel !== undefined) updateData.vehicleModel = updateTruckDto.vehicleModel;
     if (updateTruckDto.licensePlate !== undefined) updateData.licensePlate = updateTruckDto.licensePlate;
+    if (updateTruckDto.truckStatus !== undefined) updateData.truckStatus = updateTruckDto.truckStatus;
+    if (updateTruckDto.vehicleModel !== undefined) updateData.vehicleModel = updateTruckDto.vehicleModel;
     if (updateTruckDto.driverId !== undefined) {
       updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
-    }
-    if (updateTruckDto.isActive !== undefined) updateData.isActive = updateTruckDto.isActive;
-    if (updateTruckDto.truckStatus !== undefined) updateData.truckStatus = updateTruckDto.truckStatus;
-    
-    // Handle location update if coordinates provided
-    if (updateTruckDto.coordinates) {
-      updateData.location = {
-        type: 'Point',
-        coordinates: updateTruckDto.coordinates,
-      };
     }
 
     const truck = await this.truckModel
@@ -419,7 +404,6 @@ export class TruckService {
           _id: 1,
           truckCode: 1,
           vehicleNumber: 1,
-          truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
           driverId: { $toString: '$driverId' },
@@ -472,7 +456,6 @@ export class TruckService {
           _id: 1,
           truckCode: 1,
           vehicleNumber: 1,
-          truckName: 1,
           vehicleModel: 1,
           licensePlate: 1,
           driver: {
