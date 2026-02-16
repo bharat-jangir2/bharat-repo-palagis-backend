@@ -1,10 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { verify } from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { TokenService } from './token.service';
 import { DeviceType, UserType, TokenType } from '../entities/token.entity';
 import { DriverService } from './driver.service';
 import { DriverLoginDto } from '../dtos/driver-login.dto';
+import { Truck, TruckDocument } from '../entities/truck.entity';
 
 @Injectable()
 export class DriverAuthService {
@@ -12,6 +15,7 @@ export class DriverAuthService {
     private readonly tokenService: TokenService,
     private readonly driverService: DriverService,
     private readonly configService: ConfigService,
+    @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
   ) {}
 
   async login(
@@ -48,13 +52,40 @@ export class DriverAuthService {
       UserType.DRIVER,
     );
 
+    // Populate truck information if truckId exists
+    let truck: any = null;
+    if (driver.truckId) {
+      const truckDoc = await this.truckModel
+        .findOne({ _id: driver.truckId, isDeleted: false })
+        .lean()
+        .exec();
+      
+      if (truckDoc) {
+        truck = {
+          _id: truckDoc._id.toString(),
+          truckCode: truckDoc.truckCode,
+          vehicleNumber: truckDoc.vehicleNumber,
+          truckName: truckDoc.truckName,
+          vehicleModel: truckDoc.vehicleModel,
+          licensePlate: truckDoc.licensePlate,
+          location: truckDoc.location,
+          truckStatus: truckDoc.truckStatus,
+          isActive: truckDoc.isActive,
+        };
+      }
+    }
+
     const loginResponse = {
       driver: {
-        _id: driver._id,
+        _id: driver._id.toString(),
         email: driver.email,
         phone: driver.phone,
         fullName: driver.fullName,
-        truckId: driver.truckId ? driver.truckId.toString() : null,
+        licenseNumber: driver.licenseNumber,
+        address: driver.address,
+        isActive: driver.isActive,
+        driverStatus: driver.driverStatus,
+        truck, // Add truck object (null if not assigned)
       },
       accessToken,
       refreshToken,

@@ -70,6 +70,15 @@ export class DriverService {
       isDeleted: false,
     });
 
+    // Sync: If truckId is set, update truck's driverId
+    if (createDriverDto.truckId) {
+      await this.truckModel.findByIdAndUpdate(
+        createDriverDto.truckId,
+        { driverId: createdDriver._id },
+        { returnDocument: 'after' },
+      ).exec();
+    }
+
     const result = await this.driverModel.aggregate([
       { $match: { _id: createdDriver._id } },
       {
@@ -187,25 +196,34 @@ export class DriverService {
   }
 
   async update(id: string, updateDriverDto: UpdateDriverDto) {
+    // Get current driver to find old truckId before update
+    const currentDriver = await this.driverModel.findById(id).exec();
+    if (!currentDriver) {
+      throw new NotFoundException(`Driver with ID ${id} not found`);
+    }
+    const oldTruckId = currentDriver.truckId?.toString();
+
     // If truckId is being updated, validate it (only if provided)
-    if (updateDriverDto.truckId) {
-      const truck = await this.truckModel.findOne({ 
-        _id: updateDriverDto.truckId, 
-        isDeleted: false 
-      }).exec();
-      if (!truck) {
-        throw new NotFoundException(`Truck with ID ${updateDriverDto.truckId} not found`);
-      }
+    if (updateDriverDto.truckId !== undefined) {
+      if (updateDriverDto.truckId) {
+        const truck = await this.truckModel.findOne({ 
+          _id: updateDriverDto.truckId, 
+          isDeleted: false 
+        }).exec();
+        if (!truck) {
+          throw new NotFoundException(`Truck with ID ${updateDriverDto.truckId} not found`);
+        }
 
-      // Check if new truck is already assigned to another non-deleted driver (excluding current driver)
-      const existingDriverForTruck = await this.driverModel.findOne({
-        truckId: new Types.ObjectId(updateDriverDto.truckId),
-        isDeleted: false,
-        _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
-      }).exec();
+        // Check if new truck is already assigned to another non-deleted driver (excluding current driver)
+        const existingDriverForTruck = await this.driverModel.findOne({
+          truckId: new Types.ObjectId(updateDriverDto.truckId),
+          isDeleted: false,
+          _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
+        }).exec();
 
-      if (existingDriverForTruck) {
-        throw new ConflictException('This truck is already assigned to another driver');
+        if (existingDriverForTruck) {
+          throw new ConflictException('This truck is already assigned to another driver');
+        }
       }
     }
 
@@ -235,6 +253,29 @@ export class DriverService {
 
     if (!driver) {
       throw new NotFoundException(`Driver with ID ${id} not found`);
+    }
+
+    // Sync: Update truck's driverId when driver's truckId changes
+    if (updateDriverDto.truckId !== undefined) {
+      const newTruckId = updateDriverDto.truckId;
+      
+      // If old truck exists, unassign it (set its driverId to null)
+      if (oldTruckId) {
+        await this.truckModel.findByIdAndUpdate(
+          oldTruckId,
+          { driverId: null },
+          { returnDocument: 'after' },
+        ).exec();
+      }
+      
+      // If new truck is assigned, update its driverId
+      if (newTruckId) {
+        await this.truckModel.findByIdAndUpdate(
+          newTruckId,
+          { driverId: new Types.ObjectId(id) },
+          { returnDocument: 'after' },
+        ).exec();
+      }
     }
 
     const result = await this.driverModel.aggregate([

@@ -88,6 +88,15 @@ export class TruckService {
 
     const createdTruck = await this.truckModel.create(truckData);
     
+    // Sync: If driverId is set, update driver's truckId
+    if (createTruckDto.driverId) {
+      await this.driverModel.findByIdAndUpdate(
+        createTruckDto.driverId,
+        { truckId: createdTruck._id },
+        { returnDocument: 'after' },
+      ).exec();
+    }
+    
     const result = await this.truckModel.aggregate([
       { $match: { _id: createdTruck._id } },
       {
@@ -313,6 +322,13 @@ export class TruckService {
       }
     }
 
+    // Get current truck to find old driverId before update
+    const currentTruck = await this.truckModel.findById(id).exec();
+    if (!currentTruck) {
+      throw new NotFoundException(`Truck with ID ${id} not found`);
+    }
+    const oldDriverId = currentTruck.driverId?.toString();
+
     // Validate driver exists if driverId is being updated
     if (updateTruckDto.driverId !== undefined) {
       if (updateTruckDto.driverId) {
@@ -371,6 +387,29 @@ export class TruckService {
 
     if (!truck) {
       throw new NotFoundException(`Truck with ID ${id} not found`);
+    }
+
+    // Sync: Update driver's truckId when truck's driverId changes
+    if (updateTruckDto.driverId !== undefined) {
+      const newDriverId = updateTruckDto.driverId;
+      
+      // If old driver exists, unassign them (set their truckId to null)
+      if (oldDriverId) {
+        await this.driverModel.findByIdAndUpdate(
+          oldDriverId,
+          { truckId: null },
+          { returnDocument: 'after' },
+        ).exec();
+      }
+      
+      // If new driver is assigned, update their truckId
+      if (newDriverId) {
+        await this.driverModel.findByIdAndUpdate(
+          newDriverId,
+          { truckId: new Types.ObjectId(id) },
+          { returnDocument: 'after' },
+        ).exec();
+      }
     }
 
     const result = await this.truckModel.aggregate([
