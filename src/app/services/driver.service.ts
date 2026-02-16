@@ -118,13 +118,26 @@ export class DriverService {
   async findAll(
     page: number = 1,
     limit: number = 10,
+    status?: string,
+    search?: string,
   ) {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
 
-    const result = await this.driverModel.aggregate([
-      { $match: { isDeleted: false } },
+    // Build match conditions
+    const matchConditions: any = { isDeleted: false };
+
+    // Filter by status (active/inactive) - only if status is provided and not empty
+    if (status && status.trim() === 'active') {
+      matchConditions.isActive = true;
+    } else if (status && status.trim() === 'inactive') {
+      matchConditions.isActive = false;
+    }
+
+    // Build aggregation pipeline
+    const pipeline: any[] = [
+      { $match: matchConditions },
       // Always lookup truck
       {
         $lookup: {
@@ -144,48 +157,69 @@ export class DriverService {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limitNumber },
-            {
-              $project: {
-                _id: 1,
-                fullName: 1,
-                email: 1,
-                phone: 1,
-                licenseNumber: 1,
-                address: 1,
-                truck: {
-                  $cond: {
-                    if: { $ifNull: ['$truck._id', false] },
-                    then: {
-                      _id: { $toString: '$truck._id' },
-                      truckCode: '$truck.truckCode',
-                      vehicleNumber: '$truck.vehicleNumber',
-                      truckName: '$truck.truckName',
-                      vehicleModel: '$truck.vehicleModel',
-                      licensePlate: '$truck.licensePlate',
-                      location: '$truck.location',
-                      truckStatus: '$truck.truckStatus',
-                      isActive: '$truck.isActive',
-                    },
-                    else: null,
-                  },
-                },
-                isActive: 1,
-                driverStatus: 1,
-                isDeleted: 1,
-                createdAt: 1,
-                updatedAt: 1,
-              },
-            },
+    ];
+
+    // If search is provided, add search matching after lookup/unwind
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      // Additional sanitization - escape any remaining special characters
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      pipeline.push({
+        $match: {
+          $or: [
+            { email: searchRegex },
+            { phone: searchRegex },
+            { fullName: searchRegex },
           ],
-          total: [{ $count: 'count' }],
         },
+      });
+    }
+
+    // Add pagination and projection
+    pipeline.push({
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limitNumber },
+          {
+            $project: {
+              _id: 1,
+              fullName: 1,
+              email: 1,
+              phone: 1,
+              licenseNumber: 1,
+              address: 1,
+              truck: {
+                $cond: {
+                  if: { $ifNull: ['$truck._id', false] },
+                  then: {
+                    _id: { $toString: '$truck._id' },
+                    truckCode: '$truck.truckCode',
+                    vehicleNumber: '$truck.vehicleNumber',
+                    truckName: '$truck.truckName',
+                    vehicleModel: '$truck.vehicleModel',
+                    licensePlate: '$truck.licensePlate',
+                    location: '$truck.location',
+                    truckStatus: '$truck.truckStatus',
+                    isActive: '$truck.isActive',
+                  },
+                  else: null,
+                },
+              },
+              isActive: 1,
+              driverStatus: 1,
+              isDeleted: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
       },
-    ]);
+    });
+
+    const result = await this.driverModel.aggregate(pipeline);
 
     const totalItems = result[0]?.total[0]?.count || 0;
     const totalPages = Math.ceil(totalItems / limitNumber);

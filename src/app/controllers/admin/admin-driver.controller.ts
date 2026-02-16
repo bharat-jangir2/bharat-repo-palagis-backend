@@ -15,7 +15,7 @@ import { DriverService } from '../../services/driver.service';
 import { CreateDriverDto } from '../../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../../dtos/update-driver.dto';
 import { UpdateDriverStatusDto } from '../../dtos/update-driver-status.dto';
-import { PaginationDto } from '../../dtos/pagination.dto';
+import { DriverFilterDto } from '../../dtos/driver-filter.dto';
 
 @Controller('admin/drivers')
 export class AdminDriverController {
@@ -31,9 +31,14 @@ export class AdminDriverController {
   @Get()
   @Version('1')
   async getAllDrivers(
-    @Query() paginationDto: PaginationDto,
+    @Query() filterDto: DriverFilterDto,
   ) {
-     const drivers = await this.driverService.findAll(paginationDto.page, paginationDto.limit);
+     const drivers = await this.driverService.findAll(
+       filterDto.page,
+       filterDto.limit,
+       filterDto.status,
+       filterDto.search,
+     );
      return {
       ...drivers,
       userMessage: '',
