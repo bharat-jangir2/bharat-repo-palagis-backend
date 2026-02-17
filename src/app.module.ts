@@ -17,6 +17,7 @@ import { UserDeviceController } from './app/controllers/users/user-device.contro
 // Driver App Controllers
 import { DriverAuthController } from './app/controllers/drivers/driver-auth.controller';
 import { DriverTruckController } from './app/controllers/drivers/driver-truck.controller';
+import { DriverProfileController } from './app/controllers/drivers/driver-profile.controller';
 // Admin Controllers
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
@@ -120,6 +121,7 @@ const logger = new Logger('Database');
     // Driver App Controllers (Driver-facing mobile app)
     DriverAuthController,
     DriverTruckController,
+    DriverProfileController,
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,
