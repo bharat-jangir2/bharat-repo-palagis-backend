@@ -19,6 +19,7 @@ import { DriverAuthController } from './app/controllers/drivers/driver-auth.cont
 import { DriverTruckController } from './app/controllers/drivers/driver-truck.controller';
 import { DriverProfileController } from './app/controllers/drivers/driver-profile.controller';
 import { DriverStatusController } from './app/controllers/drivers/driver-status.controller';
+import { DriverTruckLocationController } from './app/controllers/drivers/driver-truck-location.controller';
 // Admin Controllers
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
@@ -124,6 +125,7 @@ const logger = new Logger('Database');
     DriverTruckController,
     DriverProfileController,
     DriverStatusController,
+    DriverTruckLocationController,
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,

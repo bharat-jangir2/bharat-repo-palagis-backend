@@ -664,4 +664,63 @@ export class TruckService {
       },
     ]);
   }
+
+  /**
+   * Update location (lat, lng, address) for the truck assigned to a driver.
+   * Used by the driver app when sending live location updates.
+   */
+  async updateLocationForDriver(
+    driverId: string,
+    latitude: number,
+    longitude: number,
+    address?: string,
+  ) {
+    // Find driver and ensure not deleted
+    const driver = await this.driverModel.findOne({
+      _id: driverId,
+      isDeleted: false,
+    }).exec();
+
+    if (!driver || !driver.truckId) {
+      throw new NotFoundException('No truck assigned to this driver');
+    }
+
+    // Build update for truck location
+    const update: any = {
+      'location.coordinates': [longitude, latitude], // [lng, lat]
+    };
+
+    if (address !== undefined) {
+      update['location.address'] = address;
+    }
+
+    const truck = await this.truckModel
+      .findOneAndUpdate(
+        { _id: driver.truckId, isDeleted: false },
+        update,
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      )
+      .exec();
+
+    if (!truck) {
+      throw new NotFoundException('Truck not found for this driver');
+    }
+
+    return {
+      _id: truck._id,
+      truckCode: truck.truckCode,
+      vehicleNumber: truck.vehicleNumber,
+      vehicleModel: truck.vehicleModel,
+      licensePlate: truck.licensePlate,
+      location: truck.location,
+      isActive: truck.isActive,
+      truckStatus: truck.truckStatus,
+      statusUpdatedAt: truck.statusUpdatedAt,
+      createdAt: truck.createdAt,
+      updatedAt: truck.updatedAt,
+    };
+  }
 }
