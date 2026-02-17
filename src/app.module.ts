@@ -18,6 +18,7 @@ import { UserDeviceController } from './app/controllers/users/user-device.contro
 import { DriverAuthController } from './app/controllers/drivers/driver-auth.controller';
 import { DriverTruckController } from './app/controllers/drivers/driver-truck.controller';
 import { DriverProfileController } from './app/controllers/drivers/driver-profile.controller';
+import { DriverStatusController } from './app/controllers/drivers/driver-status.controller';
 // Admin Controllers
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
@@ -122,6 +123,7 @@ const logger = new Logger('Database');
     DriverAuthController,
     DriverTruckController,
     DriverProfileController,
+    DriverStatusController,
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,

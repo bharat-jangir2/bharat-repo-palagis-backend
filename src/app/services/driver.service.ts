@@ -32,24 +32,24 @@ export class DriverService {
 
     // Validate truck exists only if truckId is provided
     if (createDriverDto.truckId) {
-      const truck = await this.truckModel.findOne({ 
-        _id: createDriverDto.truckId, 
-        isDeleted: false 
-      }).exec();
-      
-      if (!truck) {
-        throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
-      }
+    const truck = await this.truckModel.findOne({ 
+      _id: createDriverDto.truckId, 
+      isDeleted: false 
+    }).exec();
+    
+    if (!truck) {
+      throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
+    }
 
-      // Check if truck is already assigned to another non-deleted driver
-      const existingDriverForTruck = await this.driverModel.findOne({
-        truckId: new Types.ObjectId(createDriverDto.truckId),
-        isDeleted: false,
-      }).exec();
+    // Check if truck is already assigned to another non-deleted driver
+    const existingDriverForTruck = await this.driverModel.findOne({
+      truckId: new Types.ObjectId(createDriverDto.truckId),
+      isDeleted: false,
+    }).exec();
 
-      if (existingDriverForTruck) {
-        throw new ConflictException('This truck is already assigned to another driver');
-      }
+    if (existingDriverForTruck) {
+      throw new ConflictException('This truck is already assigned to another driver');
+    }
     }
 
     // Generate random 6-digit passcode
@@ -148,7 +148,7 @@ export class DriverService {
           foreignField: '_id',
           as: 'truck',
           pipeline: [
-            { $match: { isDeleted: false } },
+      { $match: { isDeleted: false } },
           ],
         },
       },
@@ -180,18 +180,18 @@ export class DriverService {
 
     // Add pagination and projection
     pipeline.push({
-      $facet: {
-        data: [
-          { $skip: skip },
-          { $limit: limitNumber },
-          {
-            $project: {
-              _id: 1,
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limitNumber },
+            {
+              $project: {
+                _id: 1,
               fullName: 1,
-              email: 1,
-              phone: 1,
-              licenseNumber: 1,
-              address: 1,
+                email: 1,
+                phone: 1,
+                licenseNumber: 1,
+                address: 1,
               truck: {
                 $cond: {
                   if: { $ifNull: ['$truck._id', false] },
@@ -209,16 +209,16 @@ export class DriverService {
                   else: null,
                 },
               },
-              isActive: 1,
+                isActive: 1,
               driverStatus: 1,
-              isDeleted: 1,
-              createdAt: 1,
-              updatedAt: 1,
+                isDeleted: 1,
+                createdAt: 1,
+                updatedAt: 1, 
+              },
             },
-          },
-        ],
-        total: [{ $count: 'count' }],
-      },
+          ],
+          total: [{ $count: 'count' }],
+        },
     });
 
     const result = await this.driverModel.aggregate(pipeline);
@@ -309,23 +309,25 @@ export class DriverService {
     const oldTruckId = currentDriver.truckId?.toString();
     const oldDriverStatus = currentDriver.driverStatus; // Store old status
 
-    // If truckId is being updated, validate it (only if provided)
+    // If truckId is being updated, validate it in parallel (only if provided)
     if (updateDriverDto.truckId !== undefined) {
       if (updateDriverDto.truckId) {
-        const truck = await this.truckModel.findOne({ 
-          _id: updateDriverDto.truckId, 
-          isDeleted: false 
-        }).exec();
+        // Parallel validation: check truck exists and if it's already assigned
+        const [truck, existingDriverForTruck] = await Promise.all([
+          this.truckModel.findOne({ 
+            _id: updateDriverDto.truckId, 
+            isDeleted: false 
+          }).exec(),
+          this.driverModel.findOne({
+            truckId: new Types.ObjectId(updateDriverDto.truckId),
+            isDeleted: false,
+            _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
+          }).exec(),
+        ]);
+
         if (!truck) {
           throw new NotFoundException(`Truck with ID ${updateDriverDto.truckId} not found`);
         }
-
-        // Check if new truck is already assigned to another non-deleted driver (excluding current driver)
-        const existingDriverForTruck = await this.driverModel.findOne({
-          truckId: new Types.ObjectId(updateDriverDto.truckId),
-          isDeleted: false,
-          _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
-        }).exec();
 
         if (existingDriverForTruck) {
           throw new ConflictException('This truck is already assigned to another driver');
@@ -340,9 +342,11 @@ export class DriverService {
     if (updateDriverDto.phone !== undefined) updateData.phone = updateDriverDto.phone;
     if (updateDriverDto.driverStatus !== undefined) {
       updateData.driverStatus = updateDriverDto.driverStatus;
-      // Log status change if status actually changed
+      // Log status change asynchronously if status actually changed (don't block on logging)
       if (updateDriverDto.driverStatus !== oldDriverStatus) {
-        await this.driverStatusLogService.logStatusChange(id, updateDriverDto.driverStatus);
+        this.driverStatusLogService.logStatusChange(id, updateDriverDto.driverStatus).catch(() => {
+          // Silently fail logging - don't block the update
+        });
       }
     }
     if (updateDriverDto.truckId !== undefined) {
@@ -351,7 +355,7 @@ export class DriverService {
 
     const driver = await this.driverModel
       .findOneAndUpdate(
-        { _id: id, isDeleted: false },
+      { _id: id, isDeleted: false },
         updateData,
         {
           returnDocument: 'after',
@@ -364,26 +368,36 @@ export class DriverService {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
 
-    // Sync: Update truck's driverId when driver's truckId changes
+    // Sync: Update truck's driverId when driver's truckId changes (in parallel)
     if (updateDriverDto.truckId !== undefined) {
       const newTruckId = updateDriverDto.truckId;
+      const truckSyncPromises: Promise<any>[] = [];
       
-      // If old truck exists, unassign it (set its driverId to null)
-      if (oldTruckId) {
-        await this.truckModel.findByIdAndUpdate(
-          oldTruckId,
-          { driverId: null },
-          { returnDocument: 'after' },
-        ).exec();
+      // If old truck exists and is different from new truck, unassign it
+      if (oldTruckId && oldTruckId !== newTruckId) {
+        truckSyncPromises.push(
+          this.truckModel.findByIdAndUpdate(
+            oldTruckId,
+            { driverId: null },
+            { returnDocument: 'after' },
+          ).exec()
+        );
       }
       
-      // If new truck is assigned, update its driverId
-      if (newTruckId) {
-        await this.truckModel.findByIdAndUpdate(
-          newTruckId,
-          { driverId: new Types.ObjectId(id) },
-          { returnDocument: 'after' },
-        ).exec();
+      // If new truck is assigned and different from old truck, update its driverId
+      if (newTruckId && newTruckId !== oldTruckId) {
+        truckSyncPromises.push(
+          this.truckModel.findByIdAndUpdate(
+            newTruckId,
+            { driverId: new Types.ObjectId(id) },
+            { returnDocument: 'after' },
+          ).exec()
+        );
+      }
+
+      // Execute truck sync operations in parallel
+      if (truckSyncPromises.length > 0) {
+        await Promise.all(truckSyncPromises);
       }
     }
 
