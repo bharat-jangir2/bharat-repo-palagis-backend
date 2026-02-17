@@ -123,16 +123,10 @@ export class DriverStatusLogService {
     const totalHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
 
-    // Format: "5h 30m" or "0h 30m" or "5h 0m"
-    let formatted = '';
-    if (totalHours > 0) {
-      formatted = `${totalHours}h`;
-      if (remainingMinutes > 0) {
-        formatted += ` ${remainingMinutes}m`;
-      }
-    } else {
-      formatted = `${remainingMinutes}m`;
-    }
+    // Format: "HH:MM" (zero-padded)
+    const hoursStr = String(totalHours).padStart(2, '0');
+    const minutesStr = String(remainingMinutes).padStart(2, '0');
+    const formatted = `${hoursStr}:${minutesStr}`;
 
     return {
       totalHours,
@@ -198,15 +192,10 @@ export class DriverStatusLogService {
     const totalHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
 
-    let formatted = '';
-    if (totalHours > 0) {
-      formatted = `${totalHours}h`;
-      if (remainingMinutes > 0) {
-        formatted += ` ${remainingMinutes}m`;
-      }
-    } else {
-      formatted = `${remainingMinutes}m`;
-    }
+    // Format: "HH:MM" (zero-padded)
+    const hoursStr = String(totalHours).padStart(2, '0');
+    const minutesStr = String(remainingMinutes).padStart(2, '0');
+    const formatted = `${hoursStr}:${minutesStr}`;
 
     return {
       totalHours,
