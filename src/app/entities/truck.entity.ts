@@ -46,10 +46,16 @@ export class Truck {
       required: true,
       default: [0, 0],
     },
+    address: {
+      type: String,
+      required: false,
+      default: '',
+    },
   })
   location: {
     type: string;
     coordinates: number[];
+    address?: string; // Human-readable address (e.g., "123 Main St, City, State")
   };
 
   @Prop({ default: true })

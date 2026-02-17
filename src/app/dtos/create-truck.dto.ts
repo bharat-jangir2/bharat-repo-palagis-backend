@@ -16,6 +16,10 @@ export class CreateTruckDto {
   vehicleModel?: string;
 
   @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
   @IsMongoId()
   driverId?: string;
 }

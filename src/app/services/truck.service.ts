@@ -75,6 +75,11 @@ export class TruckService {
       },
     };
 
+    // Add address to location object if provided
+    if (createTruckDto.address) {
+      truckData.location.address = createTruckDto.address;
+    }
+
     // Optional fields
     if (createTruckDto.vehicleModel) {
       truckData.vehicleModel = createTruckDto.vehicleModel;
@@ -400,6 +405,10 @@ export class TruckService {
       }
     }
     if (updateTruckDto.vehicleModel !== undefined) updateData.vehicleModel = updateTruckDto.vehicleModel;
+    if (updateTruckDto.address !== undefined) {
+      // Update address within location object using dot notation
+      updateData['location.address'] = updateTruckDto.address;
+    }
     if (updateTruckDto.driverId !== undefined) {
       updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
     }

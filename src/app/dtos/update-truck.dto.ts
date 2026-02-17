@@ -19,6 +19,10 @@ export class UpdateTruckDto {
   vehicleModel?: string;
 
   @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
   @IsMongoId()
   driverId?: string;
 }
