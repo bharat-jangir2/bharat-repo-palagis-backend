@@ -66,6 +66,7 @@ export class TruckService {
       vehicleNumber: createTruckDto.vehicleNumber,
       licensePlate: createTruckDto.licensePlate,
       truckStatus: createTruckDto.truckStatus,
+      statusUpdatedAt: new Date(), // Set statusUpdatedAt when truck is created
       isActive: true, // Default to active
       isDeleted: false,
       location: {
@@ -143,6 +144,7 @@ export class TruckService {
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           isActive: 1,
           truckStatus: 1,
+          statusUpdatedAt: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -249,6 +251,7 @@ export class TruckService {
               },
               location: 1,
               truckStatus: 1,
+              statusUpdatedAt: 1,
               createdAt: 1,
               updatedAt: 1,
             },
@@ -324,6 +327,7 @@ export class TruckService {
           },
           location: 1,
           truckStatus: 1,
+          statusUpdatedAt: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -357,6 +361,7 @@ export class TruckService {
       throw new NotFoundException(`Truck with ID ${id} not found`);
     }
     const oldDriverId = currentTruck.driverId?.toString();
+    const oldTruckStatus = currentTruck.truckStatus; // Store old status
 
     // Validate driver exists if driverId is being updated
     if (updateTruckDto.driverId !== undefined) {
@@ -387,7 +392,13 @@ export class TruckService {
     const updateData: any = {};
     if (updateTruckDto.vehicleNumber !== undefined) updateData.vehicleNumber = updateTruckDto.vehicleNumber;
     if (updateTruckDto.licensePlate !== undefined) updateData.licensePlate = updateTruckDto.licensePlate;
-    if (updateTruckDto.truckStatus !== undefined) updateData.truckStatus = updateTruckDto.truckStatus;
+    if (updateTruckDto.truckStatus !== undefined) {
+      updateData.truckStatus = updateTruckDto.truckStatus;
+      // Update statusUpdatedAt when truckStatus changes
+      if (updateTruckDto.truckStatus !== oldTruckStatus) {
+        updateData.statusUpdatedAt = new Date();
+      }
+    }
     if (updateTruckDto.vehicleModel !== undefined) updateData.vehicleModel = updateTruckDto.vehicleModel;
     if (updateTruckDto.driverId !== undefined) {
       updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
@@ -477,6 +488,7 @@ export class TruckService {
           },
           location: 1,
           truckStatus: 1,
+          statusUpdatedAt: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -487,10 +499,22 @@ export class TruckService {
   }
 
   async updateTruckStatus(id: string, truckStatus: TruckStatus) {
+    // Get current truck to check if status is changing
+    const currentTruck = await this.truckModel.findOne({ _id: id, isDeleted: false }).exec();
+    if (!currentTruck) {
+      throw new NotFoundException(`Truck with ID ${id} not found`);
+    }
+
+    const updateData: any = { truckStatus };
+    // Update statusUpdatedAt when truckStatus changes
+    if (truckStatus !== currentTruck.truckStatus) {
+      updateData.statusUpdatedAt = new Date();
+    }
+
     const truck = await this.truckModel
       .findOneAndUpdate(
         { _id: id, isDeleted: false },
-        { truckStatus },
+        updateData,
         {
           returnDocument: 'after',
           runValidators: true,
@@ -548,6 +572,7 @@ export class TruckService {
           },
           location: 1,
           truckStatus: 1,
+          statusUpdatedAt: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -623,6 +648,7 @@ export class TruckService {
           },
           location: 1,
           truckStatus: 1,
+          statusUpdatedAt: 1,
           createdAt: 1,
           updatedAt: 1,
         },

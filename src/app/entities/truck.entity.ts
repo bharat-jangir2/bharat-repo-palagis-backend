@@ -58,6 +58,9 @@ export class Truck {
   @Prop({ type: String, enum: TruckStatus, default: TruckStatus.ACTIVE })
   truckStatus: TruckStatus;
 
+  @Prop({ type: Date })
+  statusUpdatedAt?: Date; // Track when truckStatus was last updated
+
   @Prop({ default: false })
   isDeleted: boolean;
 
