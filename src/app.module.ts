@@ -53,6 +53,7 @@ import { SuperAdminProfileController } from './app/controllers/admin/super-admin
 import { DriverAuthService } from './app/services/driver-auth.service';
 import { DriverStatusLog, DriverStatusLogSchema } from './app/entities/driver-status-log.entity';
 import { DriverStatusLogService } from './app/services/driver-status-log.service';
+import { TestController } from './app/controllers/test/test.controller';
 
 const logger = new Logger('Database');
 
@@ -124,6 +125,8 @@ const logger = new Logger('Database');
     AdminDriverController,
     SuperAdminAuthController,
     SuperAdminProfileController,
+    // Test Controllers
+    TestController,
   ],
   providers: [
     AppService,
