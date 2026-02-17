@@ -138,16 +138,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // Build standard error response
+    // We already send userMessage/userMessageCode/developerMessage at the top level,
+    // so keep data minimal and avoid nesting errors under result.
     const errorResponse: StandardResponse = {
       logId,
       statusCode,
       success: false,
       userMessage,
       userMessageCode,
-      developerMessage: process.env.NODE_ENV === 'production' 
-        ? 'An error occurred while processing your request' 
+      developerMessage: process.env.NODE_ENV === 'production'
+        ? 'An error occurred while processing your request'
         : developerMessage,
-      data: errorDetails ? { result: { errors: errorDetails } } : undefined,
+      // We already send all important error info at the top level.
+      // Avoid duplicating/nesting errors inside data.result.
+      data: { result: { } },
     };
 
     response.status(statusCode).json(errorResponse);
