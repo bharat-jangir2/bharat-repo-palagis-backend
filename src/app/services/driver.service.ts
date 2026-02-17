@@ -6,12 +6,14 @@ import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
 import { Driver, DriverDocument, DriverStatus } from '../entities/driver.entity';
 import { Truck, TruckDocument } from '../entities/truck.entity';
+import { DriverStatusLogService } from './driver-status-log.service';
 
 @Injectable()
 export class DriverService {
   constructor(
     @InjectModel(Driver.name) private driverModel: Model<DriverDocument>,
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
+    private driverStatusLogService: DriverStatusLogService,
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
@@ -305,6 +307,7 @@ export class DriverService {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
     const oldTruckId = currentDriver.truckId?.toString();
+    const oldDriverStatus = currentDriver.driverStatus; // Store old status
 
     // If truckId is being updated, validate it (only if provided)
     if (updateDriverDto.truckId !== undefined) {
@@ -335,7 +338,13 @@ export class DriverService {
     if (updateDriverDto.fullName !== undefined) updateData.fullName = updateDriverDto.fullName;
     if (updateDriverDto.email !== undefined) updateData.email = updateDriverDto.email;
     if (updateDriverDto.phone !== undefined) updateData.phone = updateDriverDto.phone;
-    if (updateDriverDto.driverStatus !== undefined) updateData.driverStatus = updateDriverDto.driverStatus;
+    if (updateDriverDto.driverStatus !== undefined) {
+      updateData.driverStatus = updateDriverDto.driverStatus;
+      // Log status change if status actually changed
+      if (updateDriverDto.driverStatus !== oldDriverStatus) {
+        await this.driverStatusLogService.logStatusChange(id, updateDriverDto.driverStatus);
+      }
+    }
     if (updateDriverDto.truckId !== undefined) {
       updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
     }
@@ -437,6 +446,17 @@ export class DriverService {
   }
 
   async updateStatus(id: string, driverStatus: DriverStatus) {
+    // Get current driver to check if status is changing
+    const currentDriver = await this.driverModel.findOne({ _id: id, isDeleted: false }).exec();
+    if (!currentDriver) {
+      throw new NotFoundException(`Driver with ID ${id} not found`);
+    }
+
+    // Log status change if status actually changed
+    if (driverStatus !== currentDriver.driverStatus) {
+      await this.driverStatusLogService.logStatusChange(id, driverStatus);
+    }
+
     const driver = await this.driverModel
       .findOneAndUpdate(
         { _id: id, isDeleted: false },

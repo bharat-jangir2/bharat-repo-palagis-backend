@@ -51,6 +51,8 @@ import { SuperAdminAuthService } from './app/services/super-admin-auth.service';
 import { SuperAdminAuthController } from './app/controllers/admin/super-admin-auth.controller';
 import { SuperAdminProfileController } from './app/controllers/admin/super-admin-profile.controller';
 import { DriverAuthService } from './app/services/driver-auth.service';
+import { DriverStatusLog, DriverStatusLogSchema } from './app/entities/driver-status-log.entity';
+import { DriverStatusLogService } from './app/services/driver-status-log.service';
 
 const logger = new Logger('Database');
 
@@ -103,6 +105,7 @@ const logger = new Logger('Database');
       { name: Counter.name, schema: CounterSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: SuperAdmin.name, schema: SuperAdminSchema },
+      { name: DriverStatusLog.name, schema: DriverStatusLogSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
@@ -132,6 +135,7 @@ const logger = new Logger('Database');
     SuperAdminService,
     SuperAdminAuthService,
     DriverAuthService,
+    DriverStatusLogService,
     // Auth providers
     JwtStrategy,
     TokenService,
