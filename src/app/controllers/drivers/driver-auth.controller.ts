@@ -5,6 +5,7 @@ import {
   Post,
   Request,
   UnauthorizedException,
+  BadRequestException,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -30,16 +31,7 @@ export class DriverAuthController {
     @Headers('x-device-id') deviceId: string,
     @Headers('x-device-type') deviceType: string,
   ) {
-    if (!deviceId || !deviceType) {
-      throw new UnauthorizedException(
-        'Device ID and Device Type are required in headers',
-      );
-    }
-
-    if (!Object.values(DeviceType).includes(deviceType as DeviceType)) {
-      throw new UnauthorizedException('Invalid device type');
-    }
-
+    // Headers are validated by DeviceHeadersGuard
     return await this.driverAuthService.login({
       ...dto,
       deviceId,
@@ -55,10 +47,11 @@ export class DriverAuthController {
     @Headers('x-device-id') deviceId: string,
   ) {
     // Use deviceId from header if provided, otherwise use from body
+    // Header is validated by DeviceHeadersGuard, but refresh token might not have it
     const finalDeviceId = deviceId || refreshTokenDto.deviceId;
 
     if (!finalDeviceId) {
-      throw new UnauthorizedException('Device ID is required');
+      throw new BadRequestException('Device ID is required in header or body');
     }
 
     return await this.driverAuthService.refreshToken(

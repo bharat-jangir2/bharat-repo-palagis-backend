@@ -44,6 +44,7 @@ import { JwtStrategy } from './app/strategies/jwt.strategy';
 import { TokenService } from './app/services/token.service';
 import { CounterService } from './app/services/counter.service';
 import { JwtAuthGuard } from './app/guards/jwt-auth.guard';
+import { DeviceHeadersGuard } from './app/guards/device-headers.guard';
 import { Device, DeviceSchema } from './app/entities/device.entity';
 import { DeviceService } from './app/services/device.service';
 import {
@@ -151,6 +152,11 @@ const logger = new Logger('Database');
     JwtStrategy,
     TokenService,
     JwtAuthGuard,
+    DeviceHeadersGuard,
+    {
+      provide: APP_GUARD,
+      useClass: DeviceHeadersGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

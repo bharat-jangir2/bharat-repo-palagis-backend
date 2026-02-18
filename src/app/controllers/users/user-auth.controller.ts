@@ -3,7 +3,7 @@ import {
   Post,
   Body,
   Headers,
-  UnauthorizedException,
+  BadRequestException,
   Version,
 } from '@nestjs/common';
 import { TokenService } from '../../services/token.service';
@@ -23,16 +23,7 @@ export class UserAuthController {
     @Headers('x-device-id') deviceId: string,
     @Headers('x-device-type') deviceType: string,
   ) {
-    if (!deviceId || !deviceType) {
-      throw new UnauthorizedException(
-        'Device ID and Device Type are required in headers',
-      );
-    }
-
-    if (!Object.values(DeviceType).includes(deviceType as DeviceType)) {
-      throw new UnauthorizedException('Invalid device type');
-    }
-
+    // Headers are validated by DeviceHeadersGuard
     // No userId for public user app
     const token = await this.tokenService.registerOrUpdateFcmToken(
       deviceId,
