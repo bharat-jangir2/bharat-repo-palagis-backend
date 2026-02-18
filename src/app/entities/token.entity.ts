@@ -6,6 +6,7 @@ export type TokenDocument = Token & Document;
 export enum TokenType {
   ACCESS = 'ACCESS',
   REFRESH = 'REFRESH',
+  FCM = 'FCM',
 }
 
 export enum DeviceType {

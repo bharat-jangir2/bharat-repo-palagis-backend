@@ -170,4 +170,71 @@ export class TokenService {
       expiresAt: { $gt: new Date() },
     });
   }
+
+  async registerOrUpdateFcmToken(
+    deviceId: string,
+    fcmToken: string,
+    deviceType: DeviceType,
+    userId?: string,
+  ): Promise<TokenDocument> {
+    // FCM tokens don't expire, so set a far future date (10 years)
+    const expiresAt = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000);
+
+    const filter: any = { 
+      deviceId, 
+      tokenType: TokenType.FCM 
+    };
+    
+    if (userId) {
+      filter.userId = userId;
+    }
+
+    const token = await this.tokenModel.findOneAndUpdate(
+      filter,
+      {
+        token: fcmToken, // Store FCM token in the token field
+        deviceId,
+        deviceType,
+        tokenType: TokenType.FCM,
+        expiresAt,
+        ...(userId ? { userId } : {}),
+      },
+      {
+        upsert: true,
+        returnDocument: 'after',
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    return token;
+  }
+
+  async getFcmTokensForUser(userId: string): Promise<string[]> {
+    const tokens = await this.tokenModel.find({
+      userId,
+      tokenType: TokenType.FCM,
+      expiresAt: { $gt: new Date() },
+    }).lean();
+
+    return tokens.map(t => t.token).filter(Boolean);
+  }
+
+  async getFcmTokensForUsers(userIds: string[]): Promise<string[]> {
+    const tokens = await this.tokenModel.find({
+      userId: { $in: userIds },
+      tokenType: TokenType.FCM,
+      expiresAt: { $gt: new Date() },
+    }).lean();
+
+    return tokens.map(t => t.token).filter(Boolean);
+  }
+
+  async getAllActiveFcmTokens(): Promise<string[]> {
+    const tokens = await this.tokenModel.find({
+      tokenType: TokenType.FCM,
+      expiresAt: { $gt: new Date() },
+    }).lean();
+
+    return tokens.map(t => t.token).filter(Boolean);
+  }
 }

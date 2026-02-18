@@ -14,6 +14,7 @@ import { UserController } from './app/controllers/users/user.controller';
 import { UserTruckController } from './app/controllers/users/user-truck.controller';
 import { UserDriverController } from './app/controllers/users/user-driver.controller';
 import { UserDeviceController } from './app/controllers/users/user-device.controller';
+import { UserAuthController } from './app/controllers/users/user-auth.controller';
 // Driver App Controllers
 import { DriverAuthController } from './app/controllers/drivers/driver-auth.controller';
 import { DriverTruckController } from './app/controllers/drivers/driver-truck.controller';
@@ -120,6 +121,7 @@ const logger = new Logger('Database');
     UserTruckController,
     UserDriverController,
     UserDeviceController,
+    UserAuthController,
     // Driver App Controllers (Driver-facing mobile app)
     DriverAuthController,
     DriverTruckController,
