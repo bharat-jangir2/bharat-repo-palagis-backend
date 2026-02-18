@@ -25,13 +25,24 @@ export class CounterService {
   }
 
   async formatTruckCode(sequence: number): Promise<string> {
-    // Format: T-0001, T-0002, etc.
-    const paddedNumber = sequence.toString().padStart(4, '0');
-    return `T-${paddedNumber}`;
+    // Format: TRU-001, TRU-002, etc.
+    const paddedNumber = sequence.toString().padStart(3, '0');
+    return `TRU-${paddedNumber}`;
   }
 
   async getNextTruckCode(): Promise<string> {
     const sequence = await this.getNextSequence('truck');
     return this.formatTruckCode(sequence);
+  }
+
+  async formatDriverCode(sequence: number): Promise<string> {
+    // Format: DRV-001, DRV-002, etc.
+    const paddedNumber = sequence.toString().padStart(3, '0');
+    return `DRV-${paddedNumber}`;
+  }
+
+  async getNextDriverCode(): Promise<string> {
+    const sequence = await this.getNextSequence('driver');
+    return this.formatDriverCode(sequence);
   }
 }

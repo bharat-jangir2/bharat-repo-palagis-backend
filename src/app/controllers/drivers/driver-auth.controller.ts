@@ -30,11 +30,6 @@ export class DriverAuthController {
     @Headers('x-device-id') deviceId: string,
     @Headers('x-device-type') deviceType: string,
   ) {
-    // Validate phone or email is provided
-    if (!dto.phone && !dto.email) {
-      throw new UnauthorizedException('Either phone or email is required');
-    }
-
     if (!deviceId || !deviceType) {
       throw new UnauthorizedException(
         'Device ID and Device Type are required in headers',

@@ -15,7 +15,7 @@ export enum TruckStatus {
 })
 export class Truck {
   @Prop({ required: true, unique: true })
-  truckCode: string; // Auto-generated: T-0001, T-0002, etc.
+  truckCode: string; // Auto-generated: TRU-001, TRU-002, etc.
 
   @Prop({ required: true, unique: true })
   vehicleNumber: string;
@@ -26,8 +26,8 @@ export class Truck {
   @Prop()
   vehicleModel?: string; // e.g., "Ford Transit 2022"
 
-  @Prop({ required: true, unique: true })
-  licensePlate: string;
+  @Prop()
+  licensePlate?: string;
 
   // Reference to Driver - Optional
   @Prop({ type: Types.ObjectId, ref: 'Driver', required: false })
@@ -57,9 +57,6 @@ export class Truck {
     coordinates: number[];
     address?: string; // Human-readable address (e.g., "123 Main St, City, State")
   };
-
-  @Prop({ default: true })
-  isActive: boolean; // Status field from form
 
   @Prop({ type: String, enum: TruckStatus, default: TruckStatus.ACTIVE })
   truckStatus: TruckStatus;

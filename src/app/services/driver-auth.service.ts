@@ -21,15 +21,9 @@ export class DriverAuthService {
   async login(
     dto: DriverLoginDto & { deviceId: string; deviceType: DeviceType },
   ) {
-    // Get phone or email from dto
-    const phoneOrEmail = dto.phone || dto.email;
-    if (!phoneOrEmail) {
-      throw new Error('Either phone or email is required');
-    }
-
-    // Validate driver credentials
+    // Validate driver credentials using driverCode
     const driver = await this.driverService.validateDriver(
-      phoneOrEmail,
+      dto.driverCode,
       dto.passcode,
     );
 
@@ -70,7 +64,6 @@ export class DriverAuthService {
           licensePlate: truckDoc.licensePlate,
           location: truckDoc.location,
           truckStatus: truckDoc.truckStatus,
-          isActive: truckDoc.isActive,
         };
       }
     }
@@ -78,13 +71,15 @@ export class DriverAuthService {
     const loginResponse = {
       driver: {
         _id: driver._id.toString(),
+        driverCode: driver.driverCode,
         email: driver.email,
         phone: driver.phone,
         fullName: driver.fullName,
         licenseNumber: driver.licenseNumber,
         address: driver.address,
         isActive: driver.isActive,
-        driverStatus: driver.driverStatus,
+        accountStatus: driver.accountStatus,
+        dutyStatus: driver.dutyStatus,
         truck, // Add truck object (null if not assigned)
       },
       accessToken,

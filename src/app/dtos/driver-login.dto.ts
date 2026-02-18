@@ -1,14 +1,9 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class DriverLoginDto {
-  // Driver can login with either phone or email (at least one required - validated in controller)
-  @IsOptional()
   @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
+  @IsNotEmpty()
+  driverCode: string;
 
   @IsString()
   @IsNotEmpty()

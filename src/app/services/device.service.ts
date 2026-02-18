@@ -35,13 +35,13 @@ export class DeviceService {
 
     const device = await this.deviceModel
       .findOneAndUpdate(
-        { deviceId },
-        {
-          $set: update,
-          $setOnInsert: {
-            deviceId,
-          },
+      { deviceId },
+      {
+        $set: update,
+        $setOnInsert: {
+          deviceId,
         },
+      },
         {
           upsert: true,
           returnDocument: 'after',

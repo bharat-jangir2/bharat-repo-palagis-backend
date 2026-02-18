@@ -33,14 +33,17 @@ export class DriverStatusController {
     }
 
     // Validate at least one field is provided
-    if (updateDto.driverStatus === undefined && updateDto.truckId === undefined) {
-      throw new UnauthorizedException('At least one field (driverStatus or truckId) must be provided');
+    if (updateDto.accountStatus === undefined && updateDto.dutyStatus === undefined && updateDto.truckId === undefined) {
+      throw new UnauthorizedException('At least one field (accountStatus, dutyStatus, or truckId) must be provided');
     }
 
     // Build update object with only provided fields - directly compatible with UpdateDriverDto
     const updateData: any = {};
-    if (updateDto.driverStatus !== undefined) {
-      updateData.driverStatus = updateDto.driverStatus;
+    if (updateDto.accountStatus !== undefined) {
+      updateData.accountStatus = updateDto.accountStatus;
+    }
+    if (updateDto.dutyStatus !== undefined) {
+      updateData.dutyStatus = updateDto.dutyStatus;
     }
     if (updateDto.truckId !== undefined) {
       updateData.truckId = updateDto.truckId;
@@ -59,7 +62,8 @@ export class DriverStatusController {
         address: driver.address,
         truck: driver.truck,
         isActive: driver.isActive,
-        driverStatus: driver.driverStatus,
+        accountStatus: driver.accountStatus,
+        dutyStatus: driver.dutyStatus,
         createdAt: driver.createdAt,
         updatedAt: driver.updatedAt,
       },

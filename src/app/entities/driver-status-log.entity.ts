@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { DriverStatus } from './driver.entity';
+import { AccountStatus } from './driver.entity';
 
 export type DriverStatusLogDocument = DriverStatusLog & Document;
 
 export interface StatusLogEntry {
-  status: DriverStatus;
+  status: AccountStatus;
   timestamp: Date;
 }
 
@@ -20,7 +20,7 @@ export class DriverStatusLog {
   @Prop({
     type: [
       {
-        status: { type: String, enum: Object.values(DriverStatus), required: true },
+        status: { type: String, enum: Object.values(AccountStatus), required: true },
         timestamp: { type: Date, required: true },
         _id: false, // Disable _id for nested objects
       },

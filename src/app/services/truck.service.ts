@@ -26,14 +26,16 @@ export class TruckService {
       throw new ConflictException('Truck with this vehicle number already exists');
     }
 
-    // Check if license plate already exists
-    const existingTruckByLicense = await this.truckModel.findOne({
-      licensePlate: createTruckDto.licensePlate,
-      isDeleted: false,
-    });
+    // Check if license plate already exists (only if provided)
+    if (createTruckDto.licensePlate) {
+      const existingTruckByLicense = await this.truckModel.findOne({
+        licensePlate: createTruckDto.licensePlate,
+        isDeleted: false,
+      }).exec();
 
-    if (existingTruckByLicense) {
-      throw new ConflictException('Truck with this license plate already exists');
+      if (existingTruckByLicense) {
+        throw new ConflictException('Truck with this license plate already exists');
+      }
     }
 
     // Validate driver exists if driverId is provided
@@ -64,10 +66,8 @@ export class TruckService {
     const truckData: any = {
       truckCode,
       vehicleNumber: createTruckDto.vehicleNumber,
-      licensePlate: createTruckDto.licensePlate,
       truckStatus: createTruckDto.truckStatus,
       statusUpdatedAt: new Date(), // Set statusUpdatedAt when truck is created
-      isActive: true, // Default to active
       isDeleted: false,
       location: {
         type: 'Point',
@@ -81,6 +81,9 @@ export class TruckService {
     }
 
     // Optional fields
+    if (createTruckDto.licensePlate) {
+      truckData.licensePlate = createTruckDto.licensePlate;
+    }
     if (createTruckDto.vehicleModel) {
       truckData.vehicleModel = createTruckDto.vehicleModel;
     }
@@ -138,8 +141,7 @@ export class TruckService {
                 phone: '$driver.phone',
                 licenseNumber: '$driver.licenseNumber',
                 address: '$driver.address',
-                isActive: '$driver.isActive',
-                driverStatus: '$driver.driverStatus',
+                accountStatus: '$driver.accountStatus',
               },
               else: null,
             },
@@ -147,7 +149,6 @@ export class TruckService {
           location: 1,
           latitude: { $arrayElemAt: ['$location.coordinates', 1] },
           longitude: { $arrayElemAt: ['$location.coordinates', 0] },
-          isActive: 1,
           truckStatus: 1,
           statusUpdatedAt: 1,
           isDeleted: 1,
@@ -173,11 +174,11 @@ export class TruckService {
     // Build match conditions
     const matchConditions: any = { isDeleted: false };
 
-    // Filter by status (active/inactive) - only if status is provided and not empty
+    // Filter by status (active/inactive) using truckStatus - only if status is provided and not empty
     if (status && status.trim() === 'active') {
-      matchConditions.isActive = true;
+      matchConditions.truckStatus = TruckStatus.ACTIVE;
     } else if (status && status.trim() === 'inactive') {
-      matchConditions.isActive = false;
+      matchConditions.truckStatus = TruckStatus.INACTIVE;
     }
 
     // Build aggregation pipeline
@@ -249,7 +250,7 @@ export class TruckService {
                     licenseNumber: '$driver.licenseNumber',
                     address: '$driver.address',
                     isActive: '$driver.isActive',
-                    driverStatus: '$driver.driverStatus',
+                    accountStatus: '$driver.accountStatus',
                   },
                   else: null,
                 },
@@ -324,8 +325,7 @@ export class TruckService {
                 phone: '$driver.phone',
                 licenseNumber: '$driver.licenseNumber',
                 address: '$driver.address',
-                isActive: '$driver.isActive',
-                driverStatus: '$driver.driverStatus',
+                accountStatus: '$driver.accountStatus',
               },
               else: null,
             },
@@ -489,8 +489,7 @@ export class TruckService {
                 phone: '$driver.phone',
                 licenseNumber: '$driver.licenseNumber',
                 address: '$driver.address',
-                isActive: '$driver.isActive',
-                driverStatus: '$driver.driverStatus',
+                accountStatus: '$driver.accountStatus',
               },
               else: null,
             },
@@ -574,7 +573,7 @@ export class TruckService {
                 licenseNumber: '$driver.licenseNumber',
                 address: '$driver.address',
                 isActive: '$driver.isActive',
-                driverStatus: '$driver.driverStatus',
+                accountStatus: '$driver.accountStatus',
               },
               else: null,
             },
@@ -650,7 +649,7 @@ export class TruckService {
                 licenseNumber: '$driver.licenseNumber',
                 address: '$driver.address',
                 isActive: '$driver.isActive',
-                driverStatus: '$driver.driverStatus',
+                accountStatus: '$driver.accountStatus',
               },
               else: null,
             },
@@ -716,7 +715,6 @@ export class TruckService {
       vehicleModel: truck.vehicleModel,
       licensePlate: truck.licensePlate,
       location: truck.location,
-      isActive: truck.isActive,
       truckStatus: truck.truckStatus,
       statusUpdatedAt: truck.statusUpdatedAt,
       createdAt: truck.createdAt,

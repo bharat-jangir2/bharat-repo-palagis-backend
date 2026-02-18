@@ -2,7 +2,7 @@ import { IsOptional, IsEnum, IsString, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationDto } from './pagination.dto';
 
-export enum DriverStatusFilter {
+export enum AccountStatusFilter {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
 }
@@ -17,8 +17,8 @@ export class DriverFilterDto extends PaginationDto {
     return value;
   })
   @ValidateIf((o) => o.status !== undefined && o.status !== null && o.status !== '')
-  @IsEnum(DriverStatusFilter, { message: 'Status must be either "active" or "inactive"' })
-  status?: DriverStatusFilter;
+  @IsEnum(AccountStatusFilter, { message: 'Status must be either "active" or "inactive"' })
+  status?: AccountStatusFilter;
 
   @IsOptional()
   @Transform(({ value }) => {

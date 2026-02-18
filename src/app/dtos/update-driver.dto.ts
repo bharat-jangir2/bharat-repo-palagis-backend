@@ -1,5 +1,5 @@
 import { IsString, IsEmail, IsOptional, IsMongoId, MinLength, IsEnum } from 'class-validator';
-import { DriverStatus } from '../entities/driver.entity';
+import { AccountStatus, DutyStatus } from '../entities/driver.entity';
 
 export class UpdateDriverDto {
   @IsOptional()
@@ -17,8 +17,12 @@ export class UpdateDriverDto {
   phone?: string;
 
   @IsOptional()
-  @IsEnum(DriverStatus)
-  driverStatus?: DriverStatus;
+  @IsEnum(AccountStatus)
+  accountStatus?: AccountStatus;
+
+  @IsOptional()
+  @IsEnum(DutyStatus)
+  dutyStatus?: DutyStatus;
 
   @IsOptional()
   @IsMongoId()

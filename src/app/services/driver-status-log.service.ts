@@ -6,7 +6,7 @@ import {
   DriverStatusLogDocument,
   StatusLogEntry,
 } from '../entities/driver-status-log.entity';
-import { DriverStatus } from '../entities/driver.entity';
+import { AccountStatus } from '../entities/driver.entity';
 
 @Injectable()
 export class DriverStatusLogService {
@@ -27,18 +27,18 @@ export class DriverStatusLogService {
   }
 
   /**
-   * Log driver status change
-   * Called automatically when driverStatus is updated
+   * Log driver account status change
+   * Called automatically when accountStatus is updated
    */
   async logStatusChange(
     driverId: string,
-    driverStatus: DriverStatus,
+    accountStatus: AccountStatus,
   ): Promise<void> {
     const date = this.getTodayDateString();
     const timestamp = new Date();
 
     const statusLogEntry: StatusLogEntry = {
-      status: driverStatus,
+      status: accountStatus,
       timestamp,
     };
 
@@ -96,15 +96,15 @@ export class DriverStatusLogService {
 
     // Check if last status is ACTIVE
     const lastStatus = logs[logs.length - 1];
-    const isCurrentlyActive = lastStatus.status === DriverStatus.ACTIVE;
+    const isCurrentlyActive = lastStatus.status === AccountStatus.ACTIVE;
 
     for (let i = 0; i < logs.length; i++) {
       const currentLog = logs[i];
 
-      if (currentLog.status === DriverStatus.ACTIVE) {
+      if (currentLog.status === AccountStatus.ACTIVE) {
         // Start tracking active time
         activeStartTime = currentLog.timestamp;
-      } else if (currentLog.status === DriverStatus.INACTIVE && activeStartTime) {
+      } else if (currentLog.status === AccountStatus.INACTIVE && activeStartTime) {
         // Calculate duration from ACTIVE to INACTIVE
         const duration = currentLog.timestamp.getTime() - activeStartTime.getTime();
         totalMilliseconds += duration;
@@ -168,14 +168,14 @@ export class DriverStatusLogService {
 
     // Check if last status is ACTIVE (only if it's today)
     const lastStatus = logs[logs.length - 1];
-    const isCurrentlyActive = isToday && lastStatus.status === DriverStatus.ACTIVE;
+    const isCurrentlyActive = isToday && lastStatus.status === AccountStatus.ACTIVE;
 
     for (let i = 0; i < logs.length; i++) {
       const currentLog = logs[i];
 
-      if (currentLog.status === DriverStatus.ACTIVE) {
+      if (currentLog.status === AccountStatus.ACTIVE) {
         activeStartTime = currentLog.timestamp;
-      } else if (currentLog.status === DriverStatus.INACTIVE && activeStartTime) {
+      } else if (currentLog.status === AccountStatus.INACTIVE && activeStartTime) {
         const duration = currentLog.timestamp.getTime() - activeStartTime.getTime();
         totalMilliseconds += duration;
         activeStartTime = null;

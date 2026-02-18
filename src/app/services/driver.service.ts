@@ -4,9 +4,10 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
-import { Driver, DriverDocument, DriverStatus } from '../entities/driver.entity';
+import { Driver, DriverDocument, AccountStatus, DutyStatus } from '../entities/driver.entity';
 import { Truck, TruckDocument } from '../entities/truck.entity';
 import { DriverStatusLogService } from './driver-status-log.service';
+import { CounterService } from './counter.service';
 
 @Injectable()
 export class DriverService {
@@ -14,6 +15,7 @@ export class DriverService {
     @InjectModel(Driver.name) private driverModel: Model<DriverDocument>,
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
     private driverStatusLogService: DriverStatusLogService,
+    private counterService: CounterService,
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
@@ -52,6 +54,9 @@ export class DriverService {
     }
     }
 
+    // Generate driver code
+    const driverCode = await this.counterService.getNextDriverCode();
+
     // Generate random 6-digit passcode
     const plainPasscode = this.generatePasscode();
     
@@ -60,13 +65,15 @@ export class DriverService {
 
     // Create driver
     const createdDriver = await this.driverModel.create({
+      driverCode,
       fullName: createDriverDto.fullName,
       email: createDriverDto.email,
       phone: createDriverDto.phone,
       truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
       passcode: hashedPasscode,
       isActive: true, // Default to active
-      driverStatus: createDriverDto.driverStatus,
+      accountStatus: createDriverDto.accountStatus,
+      dutyStatus: createDriverDto.dutyStatus || DutyStatus.OFFDUTY, // Default to offduty
       isDeleted: false,
     });
 
@@ -84,6 +91,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
+          driverCode: 1,
           fullName: 1,
           email: 1,
           phone: 1,
@@ -91,7 +99,8 @@ export class DriverService {
           address: 1,
           truckId: { $toString: '$truckId' },
           isActive: 1,
-          driverStatus: 1,
+          accountStatus: 1,
+          dutyStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -187,6 +196,7 @@ export class DriverService {
             {
               $project: {
                 _id: 1,
+                driverCode: 1,
               fullName: 1,
                 email: 1,
                 phone: 1,
@@ -210,7 +220,7 @@ export class DriverService {
                 },
               },
                 isActive: 1,
-              driverStatus: 1,
+              accountStatus: 1,
                 isDeleted: 1,
                 createdAt: 1,
                 updatedAt: 1, 
@@ -262,6 +272,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
+          driverCode: 1,
           fullName: 1,
           email: 1,
           phone: 1,
@@ -285,7 +296,8 @@ export class DriverService {
             },
           },
           isActive: 1,
-          driverStatus: 1,
+          accountStatus: 1,
+          dutyStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -307,7 +319,7 @@ export class DriverService {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
     const oldTruckId = currentDriver.truckId?.toString();
-    const oldDriverStatus = currentDriver.driverStatus; // Store old status
+    const oldAccountStatus = currentDriver.accountStatus; // Store old status
 
     // If truckId is being updated, validate it in parallel (only if provided)
     if (updateDriverDto.truckId !== undefined) {
@@ -340,14 +352,17 @@ export class DriverService {
     if (updateDriverDto.fullName !== undefined) updateData.fullName = updateDriverDto.fullName;
     if (updateDriverDto.email !== undefined) updateData.email = updateDriverDto.email;
     if (updateDriverDto.phone !== undefined) updateData.phone = updateDriverDto.phone;
-    if (updateDriverDto.driverStatus !== undefined) {
-      updateData.driverStatus = updateDriverDto.driverStatus;
+    if (updateDriverDto.accountStatus !== undefined) {
+      updateData.accountStatus = updateDriverDto.accountStatus;
       // Log status change asynchronously if status actually changed (don't block on logging)
-      if (updateDriverDto.driverStatus !== oldDriverStatus) {
-        this.driverStatusLogService.logStatusChange(id, updateDriverDto.driverStatus).catch(() => {
+      if (updateDriverDto.accountStatus !== oldAccountStatus) {
+        this.driverStatusLogService.logStatusChange(id, updateDriverDto.accountStatus).catch(() => {
           // Silently fail logging - don't block the update
         });
       }
+    }
+    if (updateDriverDto.dutyStatus !== undefined) {
+      updateData.dutyStatus = updateDriverDto.dutyStatus;
     }
     if (updateDriverDto.truckId !== undefined) {
       updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
@@ -425,6 +440,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
+          driverCode: 1,
           fullName: 1,
           email: 1,
           phone: 1,
@@ -448,7 +464,8 @@ export class DriverService {
             },
           },
           isActive: 1,
-          driverStatus: 1,
+          accountStatus: 1,
+          dutyStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -459,7 +476,7 @@ export class DriverService {
     return result[0];
   }
 
-  async updateStatus(id: string, driverStatus: DriverStatus) {
+  async updateStatus(id: string, accountStatus: AccountStatus) {
     // Get current driver to check if status is changing
     const currentDriver = await this.driverModel.findOne({ _id: id, isDeleted: false }).exec();
     if (!currentDriver) {
@@ -467,14 +484,14 @@ export class DriverService {
     }
 
     // Log status change if status actually changed
-    if (driverStatus !== currentDriver.driverStatus) {
-      await this.driverStatusLogService.logStatusChange(id, driverStatus);
+    if (accountStatus !== currentDriver.accountStatus) {
+      await this.driverStatusLogService.logStatusChange(id, accountStatus);
     }
 
     const driver = await this.driverModel
       .findOneAndUpdate(
         { _id: id, isDeleted: false },
-        { driverStatus },
+        { accountStatus },
         {
           returnDocument: 'after',
           runValidators: true,
@@ -510,6 +527,7 @@ export class DriverService {
       {
         $project: {
           _id: 1,
+          driverCode: 1,
           fullName: 1,
           email: 1,
           phone: 1,
@@ -533,7 +551,8 @@ export class DriverService {
             },
           },
           isActive: 1,
-          driverStatus: 1,
+          accountStatus: 1,
+          dutyStatus: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -566,26 +585,23 @@ export class DriverService {
    * Returns the driver document if valid, throws UnauthorizedException if invalid
    */
   async validateDriver(
-    phoneOrEmail: string,
+    driverCode: string,
     passcode: string,
   ): Promise<DriverDocument> {
-    // Find driver by phone or email
+    // Find driver by driverCode
     const driver = await this.driverModel.findOne({
-      $or: [
-        { phone: phoneOrEmail },
-        { email: phoneOrEmail },
-      ],
+      driverCode,
       isDeleted: false,
     }).exec();
 
     if (!driver || !driver.isActive) {
-      throw new UnauthorizedException('Invalid phone/email or passcode');
+      throw new UnauthorizedException('Invalid driver code or passcode');
     }
 
     // Compare provided passcode with stored hashed passcode
     const isValid = await bcrypt.compare(passcode, driver.passcode);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid phone/email or passcode');
+      throw new UnauthorizedException('Invalid driver code or passcode');
     }
 
     return driver;

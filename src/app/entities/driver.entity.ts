@@ -3,13 +3,21 @@ import { Document, Types } from 'mongoose';
 
 export type DriverDocument = Driver & Document;
 
-export enum DriverStatus {
+export enum AccountStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
 }
 
+export enum DutyStatus {
+  ONDUTY = 'onduty',
+  OFFDUTY = 'offduty',
+}
+
 @Schema({ timestamps: true })
 export class Driver {
+  @Prop({ required: true, unique: true })
+  driverCode: string; // Auto-generated: DRV-001, DRV-002, etc.
+
   @Prop({ required: true })
   fullName: string;
 
@@ -35,8 +43,11 @@ export class Driver {
   @Prop({ default: true })
   isActive?: boolean;
 
-  @Prop({ type: String, enum: DriverStatus, default: DriverStatus.ACTIVE })
-  driverStatus: DriverStatus;
+  @Prop({ type: String, enum: AccountStatus, default: AccountStatus.ACTIVE })
+  accountStatus: AccountStatus;
+
+  @Prop({ type: String, enum: DutyStatus, default: DutyStatus.OFFDUTY })
+  dutyStatus: DutyStatus;
 
   @Prop({ default: false })
   isDeleted: boolean;
@@ -48,3 +59,4 @@ export class Driver {
 export const DriverSchema = SchemaFactory.createForClass(Driver);
 // Index for soft delete queries
 DriverSchema.index({ isDeleted: 1 });
+// driverCode index is automatically created by unique: true

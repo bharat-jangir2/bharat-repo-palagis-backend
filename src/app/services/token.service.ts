@@ -52,11 +52,11 @@ export class TokenService {
     await this.tokenModel.findOneAndUpdate(
       filter,
       {
-        token,
-        deviceId,
-        deviceType,
-        tokenType: TokenType.ACCESS,
-        expiresAt,
+      token,
+      deviceId,
+      deviceType,
+      tokenType: TokenType.ACCESS,
+      expiresAt,
         ...(userId ? { userId } : {}),
         ...(userType ? { userType } : {}),
       },
@@ -104,11 +104,11 @@ export class TokenService {
     await this.tokenModel.findOneAndUpdate(
       filter,
       {
-        token,
-        deviceId,
-        deviceType,
-        tokenType: TokenType.REFRESH,
-        expiresAt,
+      token,
+      deviceId,
+      deviceType,
+      tokenType: TokenType.REFRESH,
+      expiresAt,
         ...(userId ? { userId } : {}),
         ...(userType ? { userType } : {}),
       },
@@ -157,8 +157,8 @@ export class TokenService {
   async invalidateMobileTokens(deviceId: string, deviceType: DeviceType): Promise<void> {
     if (deviceType === DeviceType.IOS || deviceType === DeviceType.ANDROID) {
       await this.tokenModel.deleteMany({
-        deviceId,
-        deviceType: { $in: [DeviceType.IOS, DeviceType.ANDROID] },
+          deviceId,
+          deviceType: { $in: [DeviceType.IOS, DeviceType.ANDROID] },
       });
     }
   }

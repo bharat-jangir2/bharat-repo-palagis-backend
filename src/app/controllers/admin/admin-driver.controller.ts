@@ -92,12 +92,12 @@ export class AdminDriverController {
     @Param('driverId') driverId: string,
     @Body() updateDriverStatusDto: UpdateDriverStatusDto,
   ) {
-    const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.driverStatus);
+    const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.accountStatus);
     return {
       ...driver,
       userMessage: 'Driver status updated successfully',
       userMessageCode: 'DRIVER_STATUS_UPDATED',
-      developerMessage: `Driver status updated to ${updateDriverStatusDto.driverStatus}`,
+      developerMessage: `Driver account status updated to ${updateDriverStatusDto.accountStatus}`,
     };
   }
 }
