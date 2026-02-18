@@ -69,6 +69,12 @@ export class SuperAdminAuthController {
     @Headers('x-device-id') deviceId: string,
     @Headers('x-device-type') deviceType: string,
   ) {
+    // Require access token for logout (no silent logout without token)
+    const authHeader = req.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Access token is required for logout');
+    }
+
     // Try to get userId from authenticated user, but don't fail if token is invalid
     const userId = req.user?.userId;
 
