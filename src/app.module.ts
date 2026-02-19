@@ -30,6 +30,7 @@ import { DriverService } from './app/services/driver.service';
 import { LoggerService } from './app/services/logger.service';
 import { Truck, TruckSchema } from './app/entities/truck.entity';
 import { Driver, DriverSchema } from './app/entities/driver.entity';
+import { TruckBooking, TruckBookingSchema } from './app/entities/truck-booking.entity';
 import {
   LoggerEntity,
   LoggerSchema,
@@ -102,6 +103,7 @@ const logger = new Logger('Database');
     MongooseModule.forFeature([
       { name: Truck.name, schema: TruckSchema },
       { name: Driver.name, schema: DriverSchema },
+      { name: TruckBooking.name, schema: TruckBookingSchema },
       {
         name: LoggerEntity.name,
         schema: LoggerSchema,
