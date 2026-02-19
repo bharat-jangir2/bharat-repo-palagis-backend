@@ -14,6 +14,7 @@ export interface StandardResponse<T = any> {
   developerMessage: string;
   data?: {
     result?: T;
+    meta?: Record<string, any>; // Generalized meta object for stats/metadata
     pagination?: PaginationMeta;
   };
 }

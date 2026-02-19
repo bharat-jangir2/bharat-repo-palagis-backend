@@ -171,8 +171,9 @@ export class TruckService {
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Build match conditions
+    // Build match conditions for filtering
     const matchConditions: any = { isDeleted: false };
+    const statsMatchConditions: any = { isDeleted: false }; // For stats, don't apply status/search filters
 
     // Filter by status (active/inactive) using truckStatus - only if status is provided and not empty
     if (status && status.trim() === 'active') {
@@ -180,6 +181,13 @@ export class TruckService {
     } else if (status && status.trim() === 'inactive') {
       matchConditions.truckStatus = TruckStatus.INACTIVE;
     }
+
+    // Calculate statistics in parallel (without filters for accurate counts)
+    const [totalTrucks, activeTrucks, inactiveTrucks] = await Promise.all([
+      this.truckModel.countDocuments(statsMatchConditions),
+      this.truckModel.countDocuments({ ...statsMatchConditions, truckStatus: TruckStatus.ACTIVE }),
+      this.truckModel.countDocuments({ ...statsMatchConditions, truckStatus: TruckStatus.INACTIVE }),
+    ]);
 
     // Build aggregation pipeline
     const pipeline: any[] = [
@@ -277,6 +285,11 @@ export class TruckService {
       userMessageCode: 'TRUCKS_FETCHED',
       developerMessage: 'Trucks fetched successfully',
       result: result[0]?.data || [],
+      meta: {
+        totalTrucks,
+        inactiveTrucks,
+        activeTrucks,
+      },
       pagination: {
         page: pageNumber,
         limit: limitNumber,

@@ -78,12 +78,16 @@ export class ResponseTransformInterceptor implements NestInterceptor {
           finalResult = (dataWithoutMessages as any).result;
         }
 
-        // Build the data block, attaching pagination only if explicitly provided.
+        // Build the data block, attaching pagination and meta only if explicitly provided.
         standardResponse.data = {
           result: finalResult,
           ...(dataWithoutMessages &&
             (dataWithoutMessages as any).pagination && {
               pagination: (dataWithoutMessages as any).pagination,
+            }),
+          ...(dataWithoutMessages &&
+            (dataWithoutMessages as any).meta && {
+              meta: (dataWithoutMessages as any).meta,
             }),
         };
 
