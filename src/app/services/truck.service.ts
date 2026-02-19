@@ -6,6 +6,7 @@ import { UpdateTruckDto } from '../dtos/update-truck.dto';
 import { Truck, TruckDocument, TruckStatus } from '../entities/truck.entity';
 import { Driver, DriverDocument } from '../entities/driver.entity';
 import { CounterService } from './counter.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class TruckService {
@@ -13,6 +14,7 @@ export class TruckService {
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
     @InjectModel(Driver.name) private driverModel: Model<DriverDocument>,
     private counterService: CounterService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async addTruck(createTruckDto: CreateTruckDto) {
@@ -501,7 +503,17 @@ export class TruckService {
       throw new NotFoundException(`Truck with ID ${id} not found`);
     }
 
+    const wasActive = currentTruck.truckStatus === TruckStatus.ACTIVE;
+    const isBecomingInactive = truckStatus === TruckStatus.INACTIVE && wasActive;
+    const assignedDriverId = currentTruck.driverId?.toString() || null;
+
     const updateData: any = { truckStatus };
+
+    // If truck is becoming INACTIVE, also clear driverId on the truck
+    if (isBecomingInactive) {
+      updateData.driverId = null;
+    }
+
     // Update statusUpdatedAt when truckStatus changes
     if (truckStatus !== currentTruck.truckStatus) {
       updateData.statusUpdatedAt = new Date();
@@ -520,6 +532,22 @@ export class TruckService {
 
     if (!truck) {
       throw new NotFoundException(`Truck with ID ${id} not found`);
+    }
+
+    // If truck just became inactive and had an assigned driver, unassign and revoke tokens
+    if (isBecomingInactive && assignedDriverId) {
+      await Promise.all([
+        // Unassign truck from driver
+        this.driverModel
+          .findByIdAndUpdate(
+            assignedDriverId,
+            { truckId: null },
+            { returnDocument: 'after' },
+          )
+          .exec(),
+        // Revoke all tokens for this driver
+        this.tokenService.invalidateAllUserTokens(assignedDriverId),
+      ]);
     }
 
     const result = await this.truckModel.aggregate([

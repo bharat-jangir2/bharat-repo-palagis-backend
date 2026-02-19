@@ -18,7 +18,7 @@ import { UpdateTruckStatusDto } from '../../dtos/update-truck-status.dto';
 import { TruckFilterDto } from '../../dtos/truck-filter.dto';
 import { Public } from 'src/app/decorators/public.decorator';
 
-@Controller('admin/trucks')
+@Controller('super-admin/trucks')
 export class AdminTruckController {
   constructor(private readonly truckService: TruckService) {}
 

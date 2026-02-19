@@ -18,7 +18,7 @@ import { UpdateDriverStatusDto } from '../../dtos/update-driver-status.dto';
 import { DriverFilterDto } from '../../dtos/driver-filter.dto';
 import { DriverSelectOptionsDto } from '../../dtos/driver-select-options.dto';
 
-@Controller('admin/drivers')
+@Controller('super-admin/drivers')
 export class AdminDriverController {
   constructor(private readonly driverService: DriverService) {}
 
