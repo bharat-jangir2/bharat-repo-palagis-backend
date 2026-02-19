@@ -12,6 +12,9 @@ async function bootstrap() {
     logger: new CustomLogger(),
   });
 
+  // Set global prefix for all routes
+  app.setGlobalPrefix('api');
+
   // Enable URI versioning - allows multiple versions to coexist
   app.enableVersioning({
     type: VersioningType.URI,
@@ -54,6 +57,6 @@ async function bootstrap() {
   await app.listen(port);
   
   console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 API v1: http://localhost:${port}/v1`);
+  console.log(`📚 API v1: http://localhost:${port}/api/v1`);
 }
 bootstrap();
