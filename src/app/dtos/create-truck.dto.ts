@@ -5,10 +5,6 @@ export class CreateTruckDto {
   @IsString()
   vehicleNumber: string;
 
-  @IsOptional()
-  @IsString()
-  licensePlate?: string;
-
   @IsEnum(TruckStatus)
   truckStatus: TruckStatus;
 

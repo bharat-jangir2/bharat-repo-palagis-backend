@@ -82,13 +82,13 @@ export class ResponseTransformInterceptor implements NestInterceptor {
         standardResponse.data = {
           result: finalResult,
           ...(dataWithoutMessages &&
-            (dataWithoutMessages as any).pagination && {
-              pagination: (dataWithoutMessages as any).pagination,
-            }),
-          ...(dataWithoutMessages &&
             (dataWithoutMessages as any).meta && {
               meta: (dataWithoutMessages as any).meta,
             }),
+            ...(dataWithoutMessages &&
+              (dataWithoutMessages as any).pagination && {
+                pagination: (dataWithoutMessages as any).pagination,
+              }),
         };
 
         return standardResponse;

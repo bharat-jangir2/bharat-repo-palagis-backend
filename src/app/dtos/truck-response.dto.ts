@@ -6,7 +6,6 @@ export class TruckResponseDto {
   vehicleNumber: string;
   truckName?: string;
   vehicleModel?: string;
-  licensePlate?: string;
   driverId?: string;
   location: {
     type: string;

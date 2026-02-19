@@ -7,10 +7,6 @@ export class UpdateTruckDto {
   vehicleNumber?: string;
 
   @IsOptional()
-  @IsString()
-  licensePlate?: string;
-
-  @IsOptional()
   @IsEnum(TruckStatus)
   truckStatus?: TruckStatus;
 

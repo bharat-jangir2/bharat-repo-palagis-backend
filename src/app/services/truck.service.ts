@@ -15,7 +15,7 @@ export class TruckService {
     private counterService: CounterService,
   ) {}
 
-  async create(createTruckDto: CreateTruckDto) {
+  async addTruck(createTruckDto: CreateTruckDto) {
     // Check if vehicle number already exists
     const existingTruckByVehicleNumber = await this.truckModel.findOne({
       vehicleNumber: createTruckDto.vehicleNumber,
@@ -24,18 +24,6 @@ export class TruckService {
 
     if (existingTruckByVehicleNumber) {
       throw new ConflictException('Truck with this vehicle number already exists');
-    }
-
-    // Check if license plate already exists (only if provided)
-    if (createTruckDto.licensePlate) {
-      const existingTruckByLicense = await this.truckModel.findOne({
-        licensePlate: createTruckDto.licensePlate,
-        isDeleted: false,
-      }).exec();
-
-      if (existingTruckByLicense) {
-        throw new ConflictException('Truck with this license plate already exists');
-      }
     }
 
     // Validate driver exists if driverId is provided
@@ -81,9 +69,6 @@ export class TruckService {
     }
 
     // Optional fields
-    if (createTruckDto.licensePlate) {
-      truckData.licensePlate = createTruckDto.licensePlate;
-    }
     if (createTruckDto.vehicleModel) {
       truckData.vehicleModel = createTruckDto.vehicleModel;
     }
@@ -125,12 +110,10 @@ export class TruckService {
       },
       {
         $project: {
-          _id: 0,
-          id: { $toString: '$_id' },
+          _id: 1,
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
-          licensePlate: 1,
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
@@ -147,8 +130,6 @@ export class TruckService {
             },
           },
           location: 1,
-          latitude: { $arrayElemAt: ['$location.coordinates', 1] },
-          longitude: { $arrayElemAt: ['$location.coordinates', 0] },
           truckStatus: 1,
           statusUpdatedAt: 1,
           isDeleted: 1,
@@ -223,7 +204,6 @@ export class TruckService {
         $match: {
             $or: [
               { vehicleNumber: searchRegex },
-              { licensePlate: searchRegex },
               { vehicleModel: searchRegex },
               { truckCode: searchRegex },
               { 'driver.email': searchRegex },
@@ -246,7 +226,6 @@ export class TruckService {
               vehicleNumber: 1,
               truckName: 1,
               vehicleModel: 1,
-              licensePlate: 1,
               driver: {
                 $cond: {
                   if: { $ifNull: ['$driver._id', false] },
@@ -327,7 +306,6 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
-          licensePlate: 1,
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
@@ -359,20 +337,7 @@ export class TruckService {
     return result[0];
   }
 
-  async update(id: string, updateTruckDto: UpdateTruckDto) {
-    // Check if license plate is being updated and if it conflicts
-    if (updateTruckDto.licensePlate) {
-      const existingTruckByLicense = await this.truckModel.findOne({
-        licensePlate: updateTruckDto.licensePlate,
-        isDeleted: false,
-        _id: { $ne: new Types.ObjectId(id) },
-      }).exec();
-
-      if (existingTruckByLicense) {
-        throw new ConflictException('Truck with this license plate already exists');
-      }
-    }
-
+  async updateTruck(id: string, updateTruckDto: UpdateTruckDto) {
     // Get current truck to find old driverId before update
     const currentTruck = await this.truckModel.findById(id).exec();
     if (!currentTruck) {
@@ -409,7 +374,6 @@ export class TruckService {
     // Build update object, only including provided fields
     const updateData: any = {};
     if (updateTruckDto.vehicleNumber !== undefined) updateData.vehicleNumber = updateTruckDto.vehicleNumber;
-    if (updateTruckDto.licensePlate !== undefined) updateData.licensePlate = updateTruckDto.licensePlate;
     if (updateTruckDto.truckStatus !== undefined) {
       updateData.truckStatus = updateTruckDto.truckStatus;
       // Update statusUpdatedAt when truckStatus changes
@@ -491,7 +455,6 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
-          licensePlate: 1,
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
@@ -516,7 +479,12 @@ export class TruckService {
       },
     ]);
 
-    return result[0];
+    return {
+      userMessage: 'Truck Updated Successfully',
+      userMessageCode: 'TRUCK_UPDATED',
+      developerMessage: 'Truck Updated Successfully',
+      result: result[0],
+    };
   }
 
   async updateTruckStatus(id: string, truckStatus: TruckStatus) {
@@ -574,7 +542,6 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
-          licensePlate: 1,
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
@@ -650,7 +617,6 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
-          licensePlate: 1,
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
@@ -726,7 +692,6 @@ export class TruckService {
       truckCode: truck.truckCode,
       vehicleNumber: truck.vehicleNumber,
       vehicleModel: truck.vehicleModel,
-      licensePlate: truck.licensePlate,
       location: truck.location,
       truckStatus: truck.truckStatus,
       statusUpdatedAt: truck.statusUpdatedAt,

@@ -61,7 +61,6 @@ export class DriverAuthService {
           vehicleNumber: truckDoc.vehicleNumber,
           truckName: truckDoc.truckName,
           vehicleModel: truckDoc.vehicleModel,
-          licensePlate: truckDoc.licensePlate,
           location: truckDoc.location,
           truckStatus: truckDoc.truckStatus,
         };

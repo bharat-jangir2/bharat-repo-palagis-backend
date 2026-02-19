@@ -27,11 +27,11 @@ export class AdminTruckController {
   @HttpCode(HttpStatus.CREATED)
   @Public()
   async createTruck(@Body() createTruckDto: CreateTruckDto) {
-    const truck = await this.truckService.create(createTruckDto);
+    const truck = await this.truckService.addTruck(createTruckDto);
     return {
       ...truck,
-      userMessage: 'Truck created successfully',
-      userMessageCode: 'TRUCK_CREATED',
+      userMessage: 'Truck Added Successfully',
+      userMessageCode: 'TRUCK_ADDED',
       developerMessage: `Truck with vehicle number ${truck.vehicleNumber} has been created`,
     };
   }
@@ -61,7 +61,7 @@ export class AdminTruckController {
     @Param('id') id: string,
     @Body() updateTruckDto: UpdateTruckDto,
   ) {
-    return this.truckService.update(id, updateTruckDto);
+    return this.truckService.updateTruck(id, updateTruckDto);
   }
 
   @Delete(':id')

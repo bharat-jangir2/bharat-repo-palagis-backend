@@ -26,9 +26,6 @@ export class Truck {
   @Prop()
   vehicleModel?: string; // e.g., "Ford Transit 2022"
 
-  @Prop()
-  licensePlate?: string;
-
   // Reference to Driver - Optional
   @Prop({ type: Types.ObjectId, ref: 'Driver', required: false })
   driverId?: Types.ObjectId;
