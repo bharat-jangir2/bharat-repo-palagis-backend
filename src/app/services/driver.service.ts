@@ -32,26 +32,29 @@ export class DriverService {
       throw new ConflictException('Driver with this email or phone already exists');
     }
 
-    // Validate truck exists only if truckId is provided
-    if (createDriverDto.truckId) {
-    const truck = await this.truckModel.findOne({ 
-      _id: createDriverDto.truckId, 
-      isDeleted: false 
-    }).exec();
+    // Handle truckId: empty string means null (unassigned), otherwise validate if provided
+    const truckIdValue = createDriverDto.truckId === '' ? null : createDriverDto.truckId;
     
-    if (!truck) {
-      throw new NotFoundException(`Truck with ID ${createDriverDto.truckId} not found`);
-    }
+    // Validate truck exists only if truckId is provided and not empty
+    if (truckIdValue) {
+      const truck = await this.truckModel.findOne({ 
+        _id: truckIdValue, 
+        isDeleted: false 
+      }).exec();
+      
+      if (!truck) {
+        throw new NotFoundException(`Truck with ID ${truckIdValue} not found`);
+      }
 
-    // Check if truck is already assigned to another non-deleted driver
-    const existingDriverForTruck = await this.driverModel.findOne({
-      truckId: new Types.ObjectId(createDriverDto.truckId),
-      isDeleted: false,
-    }).exec();
+      // Check if truck is already assigned to another non-deleted driver
+      const existingDriverForTruck = await this.driverModel.findOne({
+        truckId: new Types.ObjectId(truckIdValue),
+        isDeleted: false,
+      }).exec();
 
-    if (existingDriverForTruck) {
-      throw new ConflictException('This truck is already assigned to another driver');
-    }
+      if (existingDriverForTruck) {
+        throw new ConflictException('This truck is already assigned to another driver');
+      }
     }
 
     // Generate driver code
@@ -69,7 +72,7 @@ export class DriverService {
       fullName: createDriverDto.fullName,
       email: createDriverDto.email,
       phone: createDriverDto.phone,
-      truckId: createDriverDto.truckId ? new Types.ObjectId(createDriverDto.truckId) : undefined,
+      truckId: truckIdValue ? new Types.ObjectId(truckIdValue) : undefined,
       passcode: hashedPasscode,
       isActive: true, // Default to active
       accountStatus: createDriverDto.accountStatus,
@@ -78,9 +81,9 @@ export class DriverService {
     });
 
     // Sync: If truckId is set, update truck's driverId
-    if (createDriverDto.truckId) {
+    if (truckIdValue) {
       await this.truckModel.findByIdAndUpdate(
-        createDriverDto.truckId,
+        truckIdValue,
         { driverId: createdDriver._id },
         { returnDocument: 'after' },
       ).exec();
@@ -246,6 +249,66 @@ export class DriverService {
     };
   }
 
+  async findAllDriversForDropdown(
+    page: number = 1,
+    limit: number = 100,
+    search?: string,
+  ) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Math.min(100, Number(limit) || 100)); // Max 100 items per page
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // Build match conditions
+    const matchConditions: any = { isDeleted: false };
+
+    // If search is provided, add search matching for fullName
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      // Sanitize search input - escape special regex characters
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      matchConditions.fullName = searchRegex;
+    }
+
+    // Simple aggregation for dropdown - only _id and fullName
+    const pipeline: any[] = [
+      { $match: matchConditions },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limitNumber },
+            {
+              $project: {
+                _id: 1,
+                fullName: 1,
+              },
+            },
+          ],
+          total: [{ $count: 'count' }],
+        },
+      },
+    ];
+
+    const result = await this.driverModel.aggregate(pipeline);
+
+    const totalItems = result[0]?.total[0]?.count || 0;
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    return {
+      userMessage: '',
+      userMessageCode: 'DRIVERS_FETCHED',
+      developerMessage: 'Drivers fetched successfully',
+      result: result[0]?.data || [],
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalItems,
+        totalPages,
+      },
+    };
+  }
+
   async findOne(id: string) {
     const result = await this.driverModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
@@ -319,24 +382,28 @@ export class DriverService {
     const oldTruckId = currentDriver.truckId?.toString();
     const oldAccountStatus = currentDriver.accountStatus; // Store old status
 
-    // If truckId is being updated, validate it in parallel (only if provided)
+    // Handle truckId: empty string means null (unassigned), otherwise validate if provided
+    let truckIdValue: string | null | undefined = undefined;
     if (updateDriverDto.truckId !== undefined) {
-      if (updateDriverDto.truckId) {
+      truckIdValue = updateDriverDto.truckId === '' ? null : updateDriverDto.truckId;
+      
+      // If truckId is being updated and has a value, validate it in parallel
+      if (truckIdValue) {
         // Parallel validation: check truck exists and if it's already assigned
         const [truck, existingDriverForTruck] = await Promise.all([
           this.truckModel.findOne({ 
-            _id: updateDriverDto.truckId, 
+            _id: truckIdValue, 
             isDeleted: false 
           }).exec(),
           this.driverModel.findOne({
-            truckId: new Types.ObjectId(updateDriverDto.truckId),
+            truckId: new Types.ObjectId(truckIdValue),
             isDeleted: false,
             _id: { $ne: new Types.ObjectId(id) }, // Exclude current driver
           }).exec(),
         ]);
 
         if (!truck) {
-          throw new NotFoundException(`Truck with ID ${updateDriverDto.truckId} not found`);
+          throw new NotFoundException(`Truck with ID ${truckIdValue} not found`);
         }
 
         if (existingDriverForTruck) {
@@ -363,7 +430,7 @@ export class DriverService {
       updateData.dutyStatus = updateDriverDto.dutyStatus;
     }
     if (updateDriverDto.truckId !== undefined) {
-      updateData.truckId = updateDriverDto.truckId ? new Types.ObjectId(updateDriverDto.truckId) : null;
+      updateData.truckId = truckIdValue ? new Types.ObjectId(truckIdValue) : null;
     }
 
     const driver = await this.driverModel
@@ -383,7 +450,7 @@ export class DriverService {
 
     // Sync: Update truck's driverId when driver's truckId changes (in parallel)
     if (updateDriverDto.truckId !== undefined) {
-      const newTruckId = updateDriverDto.truckId;
+      const newTruckId = truckIdValue;
       const truckSyncPromises: Promise<any>[] = [];
       
       // If old truck exists and is different from new truck, unassign it

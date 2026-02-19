@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsMongoId, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsMongoId, IsEnum, ValidateIf } from 'class-validator';
 import { TruckStatus } from '../entities/truck.entity';
 
 export class UpdateTruckDto {
@@ -19,6 +19,7 @@ export class UpdateTruckDto {
   address?: string;
 
   @IsOptional()
+  @ValidateIf((o) => o.driverId !== '' && o.driverId !== null && o.driverId !== undefined)
   @IsMongoId()
-  driverId?: string;
+  driverId?: string | null;
 }

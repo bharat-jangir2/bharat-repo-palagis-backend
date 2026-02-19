@@ -16,6 +16,7 @@ import { CreateDriverDto } from '../../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../../dtos/update-driver.dto';
 import { UpdateDriverStatusDto } from '../../dtos/update-driver-status.dto';
 import { DriverFilterDto } from '../../dtos/driver-filter.dto';
+import { DriverSelectOptionsDto } from '../../dtos/driver-select-options.dto';
 
 @Controller('admin/drivers')
 export class AdminDriverController {
@@ -45,6 +46,18 @@ export class AdminDriverController {
       userMessageCode: 'DRIVERS_FETCHED',
       developerMessage: `Drivers fetched successfully`,
     };
+  }
+
+  @Get('select-options')
+  @Version('1')
+  async getDriversForSelectOptions(
+    @Query() filterDto: DriverSelectOptionsDto,
+  ) {
+    return this.driverService.findAllDriversForDropdown(
+      filterDto.page,
+      filterDto.limit,
+      filterDto.search,
+    );
   }
 
   @Get(':id')

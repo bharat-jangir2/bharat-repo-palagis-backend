@@ -26,20 +26,23 @@ export class TruckService {
       throw new ConflictException('Truck with this vehicle number already exists');
     }
 
-    // Validate driver exists if driverId is provided
-    if (createTruckDto.driverId) {
+    // Handle driverId: empty string means null (unassigned), otherwise validate if provided
+    const driverIdValue = createTruckDto.driverId === '' ? null : createTruckDto.driverId;
+    
+    // Validate driver exists if driverId is provided and not empty
+    if (driverIdValue) {
       const driver = await this.driverModel.findOne({
-        _id: createTruckDto.driverId,
+        _id: driverIdValue,
         isDeleted: false,
       }).exec();
 
       if (!driver) {
-        throw new NotFoundException(`Driver with ID ${createTruckDto.driverId} not found`);
+        throw new NotFoundException(`Driver with ID ${driverIdValue} not found`);
       }
 
       // Check if driver is already assigned to another truck
       const existingTruckForDriver = await this.truckModel.findOne({
-        driverId: new Types.ObjectId(createTruckDto.driverId),
+        driverId: new Types.ObjectId(driverIdValue),
         isDeleted: false,
       }).exec();
 
@@ -72,16 +75,16 @@ export class TruckService {
     if (createTruckDto.vehicleModel) {
       truckData.vehicleModel = createTruckDto.vehicleModel;
     }
-    if (createTruckDto.driverId) {
-      truckData.driverId = new Types.ObjectId(createTruckDto.driverId);
+    if (driverIdValue) {
+      truckData.driverId = new Types.ObjectId(driverIdValue);
     }
 
     const createdTruck = await this.truckModel.create(truckData);
     
     // Sync: If driverId is set, update driver's truckId
-    if (createTruckDto.driverId) {
+    if (driverIdValue) {
       await this.driverModel.findByIdAndUpdate(
-        createTruckDto.driverId,
+        driverIdValue,
         { truckId: createdTruck._id },
         { returnDocument: 'after' },
       ).exec();
@@ -346,21 +349,25 @@ export class TruckService {
     const oldDriverId = currentTruck.driverId?.toString();
     const oldTruckStatus = currentTruck.truckStatus; // Store old status
 
-    // Validate driver exists if driverId is being updated
+    // Handle driverId: empty string means null (unassigned), otherwise validate if provided
+    let driverIdValue: string | null | undefined = undefined;
     if (updateTruckDto.driverId !== undefined) {
-      if (updateTruckDto.driverId) {
+      driverIdValue = updateTruckDto.driverId === '' ? null : updateTruckDto.driverId;
+      
+      // If driverId is being updated and has a value, validate it
+      if (driverIdValue) {
         const driver = await this.driverModel.findOne({
-          _id: updateTruckDto.driverId,
+          _id: driverIdValue,
           isDeleted: false,
         }).exec();
 
         if (!driver) {
-          throw new NotFoundException(`Driver with ID ${updateTruckDto.driverId} not found`);
+          throw new NotFoundException(`Driver with ID ${driverIdValue} not found`);
         }
 
         // Check if driver is already assigned to another truck (excluding current truck)
         const existingTruckForDriver = await this.truckModel.findOne({
-          driverId: new Types.ObjectId(updateTruckDto.driverId),
+          driverId: new Types.ObjectId(driverIdValue),
           isDeleted: false,
           _id: { $ne: new Types.ObjectId(id) },
         }).exec();
@@ -387,7 +394,7 @@ export class TruckService {
       updateData['location.address'] = updateTruckDto.address;
     }
     if (updateTruckDto.driverId !== undefined) {
-      updateData.driverId = updateTruckDto.driverId ? new Types.ObjectId(updateTruckDto.driverId) : null;
+      updateData.driverId = driverIdValue ? new Types.ObjectId(driverIdValue) : null;
     }
 
     const truck = await this.truckModel
@@ -407,7 +414,7 @@ export class TruckService {
 
     // Sync: Update driver's truckId when truck's driverId changes
     if (updateTruckDto.driverId !== undefined) {
-      const newDriverId = updateTruckDto.driverId;
+      const newDriverId = driverIdValue;
       
       // If old driver exists, unassign them (set their truckId to null)
       if (oldDriverId) {
