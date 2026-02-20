@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Truck } from './truck.entity';
 import { Driver } from './driver.entity';
+import { User } from './user.entity';
 
 export type TruckBookingDocument = TruckBooking & Document;
 
@@ -19,7 +20,15 @@ export enum TruckBookingStatus {
 
 @Schema({ timestamps: true })
 export class TruckBooking {
- 
+  @Prop({ required: true, unique: true })
+  requestId: string; // Auto-generated: REQ-2024-001, REQ-2024-002, etc.
+
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  userId: Types.ObjectId; // Reference to the user who created the booking
+
+  @Prop({ required: true })
+  deviceId: string; // Device ID of the user who created the booking
+
   @Prop({ required: true })
   fullName: string;
 
@@ -84,4 +93,6 @@ export const TruckBookingSchema = SchemaFactory.createForClass(TruckBooking);
 TruckBookingSchema.index({ eventLocation: '2dsphere' });
 TruckBookingSchema.index({ isDeleted: 1 });
 TruckBookingSchema.index({ bookingDate: 1 });
+TruckBookingSchema.index({ userId: 1 });
+TruckBookingSchema.index({ status: 1 });
 

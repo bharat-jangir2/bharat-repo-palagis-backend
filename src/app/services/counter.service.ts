@@ -45,4 +45,18 @@ export class CounterService {
     const sequence = await this.getNextSequence('driver');
     return this.formatDriverCode(sequence);
   }
+
+  async formatRequestId(sequence: number, year: number): Promise<string> {
+    // Format: REQ-2024-001, REQ-2024-002, etc.
+    const paddedNumber = sequence.toString().padStart(3, '0');
+    return `REQ-${year}-${paddedNumber}`;
+  }
+
+  async getNextRequestId(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    // Use year-specific counter to reset sequence each year
+    const counterName = `request_${currentYear}`;
+    const sequence = await this.getNextSequence(counterName);
+    return this.formatRequestId(sequence, currentYear);
+  }
 }

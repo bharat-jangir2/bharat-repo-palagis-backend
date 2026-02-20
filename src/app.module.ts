@@ -63,6 +63,8 @@ import { User, UserSchema } from './app/entities/user.entity';
 import { UserService } from './app/services/user.service';
 import { UserAuthService } from './app/services/user-auth.service';
 import { UserProfileController } from './app/controllers/users/user-profile.controller';
+import { UserBookingController } from './app/controllers/users/user-booking.controller';
+import { TruckBookingService } from './app/services/truck-booking.service';
 import { TestController } from './app/controllers/test/test.controller';
 
 const logger = new Logger('Database');
@@ -131,6 +133,7 @@ const logger = new Logger('Database');
     UserDeviceController,
     UserAuthController,
     UserProfileController,
+    UserBookingController,
     // Driver App Controllers (Driver-facing mobile app)
     DriverAuthController,
     DriverTruckController,
@@ -158,6 +161,7 @@ const logger = new Logger('Database');
     DriverStatusLogService,
     UserService,
     UserAuthService,
+    TruckBookingService,
     // Auth providers
     JwtStrategy,
     TokenService,
