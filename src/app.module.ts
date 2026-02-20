@@ -59,6 +59,10 @@ import { SuperAdminProfileController } from './app/controllers/admin/super-admin
 import { DriverAuthService } from './app/services/driver-auth.service';
 import { DriverStatusLog, DriverStatusLogSchema } from './app/entities/driver-status-log.entity';
 import { DriverStatusLogService } from './app/services/driver-status-log.service';
+import { User, UserSchema } from './app/entities/user.entity';
+import { UserService } from './app/services/user.service';
+import { UserAuthService } from './app/services/user-auth.service';
+import { UserProfileController } from './app/controllers/users/user-profile.controller';
 import { TestController } from './app/controllers/test/test.controller';
 
 const logger = new Logger('Database');
@@ -114,6 +118,7 @@ const logger = new Logger('Database');
       { name: Device.name, schema: DeviceSchema },
       { name: SuperAdmin.name, schema: SuperAdminSchema },
       { name: DriverStatusLog.name, schema: DriverStatusLogSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
@@ -125,6 +130,7 @@ const logger = new Logger('Database');
     UserDriverController,
     UserDeviceController,
     UserAuthController,
+    UserProfileController,
     // Driver App Controllers (Driver-facing mobile app)
     DriverAuthController,
     DriverTruckController,
@@ -150,6 +156,8 @@ const logger = new Logger('Database');
     SuperAdminAuthService,
     DriverAuthService,
     DriverStatusLogService,
+    UserService,
+    UserAuthService,
     // Auth providers
     JwtStrategy,
     TokenService,

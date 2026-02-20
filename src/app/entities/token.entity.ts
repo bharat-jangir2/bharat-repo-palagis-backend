@@ -19,6 +19,7 @@ export enum DeviceType {
 export enum UserType {
   SUPER_ADMIN = 'SUPER_ADMIN',
   DRIVER = 'DRIVER',
+  USER = 'USER',
 }
 
 @Schema({ timestamps: true })
