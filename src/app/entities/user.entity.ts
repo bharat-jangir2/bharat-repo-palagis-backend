@@ -27,6 +27,7 @@ export class User {
       notificationEnabled: false,
       locationEnabled: false,
     },
+    _id: false,
   })
   settings: UserSettings;
 
