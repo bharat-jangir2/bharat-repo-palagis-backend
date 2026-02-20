@@ -64,7 +64,10 @@ import { UserService } from './app/services/user.service';
 import { UserAuthService } from './app/services/user-auth.service';
 import { UserProfileController } from './app/controllers/users/user-profile.controller';
 import { UserBookingController } from './app/controllers/users/user-booking.controller';
+import { UserSavedLocationController } from './app/controllers/users/user-saved-location.controller';
 import { TruckBookingService } from './app/services/truck-booking.service';
+import { SavedLocationService } from './app/services/saved-location.service';
+import { SavedLocation, SavedLocationSchema } from './app/entities/saved-location.entity';
 import { TestController } from './app/controllers/test/test.controller';
 
 const logger = new Logger('Database');
@@ -121,6 +124,7 @@ const logger = new Logger('Database');
       { name: SuperAdmin.name, schema: SuperAdminSchema },
       { name: DriverStatusLog.name, schema: DriverStatusLogSchema },
       { name: User.name, schema: UserSchema },
+      { name: SavedLocation.name, schema: SavedLocationSchema },
     ]),
     // Firebase / Notifications
     NotificationsModule,
@@ -134,6 +138,7 @@ const logger = new Logger('Database');
     UserAuthController,
     UserProfileController,
     UserBookingController,
+    UserSavedLocationController,
     // Driver App Controllers (Driver-facing mobile app)
     DriverAuthController,
     DriverTruckController,
@@ -162,6 +167,7 @@ const logger = new Logger('Database');
     UserService,
     UserAuthService,
     TruckBookingService,
+    SavedLocationService,
     // Auth providers
     JwtStrategy,
     TokenService,
