@@ -8,6 +8,7 @@ import { Driver, DriverDocument, AccountStatus, DutyStatus } from '../entities/d
 import { Truck, TruckDocument } from '../entities/truck.entity';
 import { DriverStatusLogService } from './driver-status-log.service';
 import { CounterService } from './counter.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class DriverService {
@@ -16,6 +17,7 @@ export class DriverService {
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
     private driverStatusLogService: DriverStatusLogService,
     private counterService: CounterService,
+    private tokenService: TokenService,
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
@@ -139,14 +141,38 @@ export class DriverService {
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 10)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Build match conditions
+    // Build match conditions for filtering
     const matchConditions: any = { isDeleted: false };
+    const statsMatchConditions: any = { isDeleted: false }; // For stats, don't apply status/search filters
 
-    // Filter by status (active/inactive) - only if status is provided and not empty
+    // Filter by status (active/inactive) using accountStatus - only if status is provided and not empty
     if (status && status.trim() === 'active') {
-      matchConditions.isActive = true;
+      matchConditions.accountStatus = AccountStatus.ACTIVE;
     } else if (status && status.trim() === 'inactive') {
-      matchConditions.isActive = false;
+      matchConditions.accountStatus = AccountStatus.INACTIVE;
+    }
+
+    // Calculate statistics in parallel (without filters for accurate counts)
+    const [totalDrivers, activeDrivers, inactiveDrivers] = await Promise.all([
+      this.driverModel.countDocuments(statsMatchConditions),
+      this.driverModel.countDocuments({ ...statsMatchConditions, accountStatus: AccountStatus.ACTIVE }),
+      this.driverModel.countDocuments({ ...statsMatchConditions, accountStatus: AccountStatus.INACTIVE }),
+    ]);
+
+    // If search is provided, add search matching to matchConditions
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      // We escape the dot so 'alex@gmail.com' searches for a literal '.'
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Use ^ to match from the start if you want more strictness, 
+      // or leave as is for "contains" matching.
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      matchConditions.$or = [
+        { email: searchRegex },
+        { phone: searchRegex },
+        { fullName: searchRegex },
+      ];
     }
 
     // Build aggregation pipeline
@@ -160,7 +186,7 @@ export class DriverService {
           foreignField: '_id',
           as: 'truck',
           pipeline: [
-      { $match: { isDeleted: false } },
+            { $match: { isDeleted: false } },
           ],
         },
       },
@@ -173,38 +199,21 @@ export class DriverService {
       },
     ];
 
-    // If search is provided, add search matching after lookup/unwind
-    if (search && typeof search === 'string' && search.trim().length > 0) {
-      // Additional sanitization - escape any remaining special characters
-      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
-      
-      pipeline.push({
-        $match: {
-          $or: [
-            { email: searchRegex },
-            { phone: searchRegex },
-            { fullName: searchRegex },
-          ],
-        },
-      });
-    }
-
     // Add pagination and projection
     pipeline.push({
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limitNumber },
-            {
-              $project: {
-                _id: 1,
-                driverCode: 1,
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limitNumber },
+          {
+            $project: {
+              _id: 1,
+              driverCode: 1,
               fullName: 1,
-                email: 1,
-                phone: 1,
-                licenseNumber: 1,
-                address: 1,
+              email: 1,
+              phone: 1,
+              licenseNumber: 1,
+              address: 1,
               truck: {
                 $cond: {
                   if: { $ifNull: ['$truck._id', false] },
@@ -212,25 +221,21 @@ export class DriverService {
                     _id: { $toString: '$truck._id' },
                     truckCode: '$truck.truckCode',
                     vehicleNumber: '$truck.vehicleNumber',
-                    truckName: '$truck.truckName',
-                    vehicleModel: '$truck.vehicleModel',
-                    location: '$truck.location',
-                    truckStatus: '$truck.truckStatus',
-                    isActive: '$truck.isActive',
+                    status: '$truck.truckStatus',
                   },
                   else: null,
                 },
               },
-                isActive: 1,
+              isActive: 1,
               accountStatus: 1,
-                isDeleted: 1,
-                createdAt: 1,
-                updatedAt: 1, 
-              },
+              dutyStatus: 1,
+              createdAt: 1,
+              updatedAt: 1,
             },
-          ],
-          total: [{ $count: 'count' }],
-        },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
     });
 
     const result = await this.driverModel.aggregate(pipeline);
@@ -240,6 +245,11 @@ export class DriverService {
 
     return {
       result: result[0]?.data || [],
+      meta: {
+        totalDrivers,
+        activeDrivers,
+        inactiveDrivers,
+      },
       pagination: {
         page: pageNumber,
         limit: limitNumber,
@@ -552,6 +562,19 @@ export class DriverService {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
 
+    const wasActive = currentDriver.accountStatus === AccountStatus.ACTIVE;
+    const isBecomingInactive = accountStatus === AccountStatus.INACTIVE && wasActive;
+    const assignedTruckId = currentDriver.truckId?.toString() || null;
+
+    // Build update data
+    const updateData: any = { accountStatus };
+
+    // If driver is becoming INACTIVE, also clear truckId and set dutyStatus to OFFDUTY
+    if (isBecomingInactive) {
+      updateData.truckId = null;
+      updateData.dutyStatus = DutyStatus.OFFDUTY;
+    }
+
     // Log status change if status actually changed
     if (accountStatus !== currentDriver.accountStatus) {
       await this.driverStatusLogService.logStatusChange(id, accountStatus);
@@ -560,7 +583,7 @@ export class DriverService {
     const driver = await this.driverModel
       .findOneAndUpdate(
         { _id: id, isDeleted: false },
-        { accountStatus },
+        updateData,
         {
           returnDocument: 'after',
           runValidators: true,
@@ -570,6 +593,21 @@ export class DriverService {
 
     if (!driver) {
       throw new NotFoundException(`Driver with ID ${id} not found`);
+    }
+
+    // If driver became inactive, free the assigned truck and logout from all devices
+    if (isBecomingInactive) {
+      // Free the truck (clear driverId)
+      if (assignedTruckId) {
+        await this.truckModel.findByIdAndUpdate(
+          assignedTruckId,
+          { driverId: null },
+          { returnDocument: 'after' },
+        ).exec();
+      }
+
+      // Logout driver from all devices (invalidate all tokens)
+      await this.tokenService.invalidateAllUserTokens(id);
     }
 
     const result = await this.driverModel.aggregate([

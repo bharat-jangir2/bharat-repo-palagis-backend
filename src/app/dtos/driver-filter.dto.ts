@@ -26,11 +26,8 @@ export class DriverFilterDto extends PaginationDto {
     if (!value || value === '' || value === null) {
       return undefined;
     }
-    // Sanitize search string - escape special regex characters
-    const sanitized = String(value)
-      .trim()
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex special characters
-    return sanitized || undefined;
+    // Return trimmed value - sanitization is done in the service layer
+    return String(value).trim() || undefined;
   })
   @IsString()
   search?: string; // Search by email, name (fullName), or phone number
