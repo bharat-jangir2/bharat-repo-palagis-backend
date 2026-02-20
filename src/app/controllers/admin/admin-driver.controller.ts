@@ -60,6 +60,22 @@ export class AdminDriverController {
     );
   }
 
+  @Post(':driverId/account-status')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateDriverStatus(
+    @Param('driverId') driverId: string,
+    @Body() updateDriverStatusDto: UpdateDriverStatusDto,
+  ) {
+    const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.accountStatus);
+    return {
+      ...driver,
+      userMessage: 'Driver status updated successfully',
+      userMessageCode: 'DRIVER_STATUS_UPDATED',
+      developerMessage: `Driver account status updated to ${updateDriverStatusDto.accountStatus}`,
+    };
+  }
+
   @Get(':id')
   @Version('1')
   async getDriver(@Param('id') id: string) {
@@ -95,22 +111,6 @@ export class AdminDriverController {
       userMessage: 'Driver deleted successfully',
       userMessageCode: 'DRIVER_DELETED',
       developerMessage: `Driver deleted successfully`,
-    };
-  }
-
-  @Post(':driverId/update-status')
-  @Version('1')
-  @HttpCode(HttpStatus.OK)
-  async updateDriverStatus(
-    @Param('driverId') driverId: string,
-    @Body() updateDriverStatusDto: UpdateDriverStatusDto,
-  ) {
-    const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.accountStatus);
-    return {
-      ...driver,
-      userMessage: 'Driver status updated successfully',
-      userMessageCode: 'DRIVER_STATUS_UPDATED',
-      developerMessage: `Driver account status updated to ${updateDriverStatusDto.accountStatus}`,
     };
   }
 }
