@@ -17,18 +17,15 @@ export class User {
   @Prop()
   deviceType?: string; // IOS, ANDROID, WEB
 
-  @Prop()
-  fcmToken?: string; // For push notifications
-
   // User settings
   @Prop({
     type: {
-      notificationEnabled: { type: Boolean, default: true },
-      locationEnabled: { type: Boolean, default: true },
+      notificationEnabled: { type: Boolean, default: false },
+      locationEnabled: { type: Boolean, default: false },
     },
     default: {
-      notificationEnabled: true,
-      locationEnabled: true,
+      notificationEnabled: false,
+      locationEnabled: false,
     },
   })
   settings: UserSettings;

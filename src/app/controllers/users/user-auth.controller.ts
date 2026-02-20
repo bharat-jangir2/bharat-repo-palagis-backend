@@ -11,7 +11,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UserAuthService } from '../../services/user-auth.service';
-import { UserService } from '../../services/user.service';
 import { TokenService } from '../../services/token.service';
 import { RegisterFcmTokenDto } from '../../dtos/register-fcm-token.dto';
 import { RefreshTokenDto } from '../../dtos/refresh-token.dto';
@@ -23,7 +22,6 @@ import { DeviceType, UserType } from '../../entities/token.entity';
 export class UserAuthController {
   constructor(
     private readonly userAuthService: UserAuthService,
-    private readonly userService: UserService,
     private readonly tokenService: TokenService,
   ) {}
 
@@ -125,10 +123,7 @@ export class UserAuthController {
       throw new BadRequestException('Invalid user token');
     }
 
-    // Update FCM token for user
-    await this.userService.updateFcmToken(userId, dto.fcmToken);
-
-    // Also store in token service for device-based notifications
+    // Store FCM token in Token collection for device-based notifications
     const token = await this.tokenService.registerOrUpdateFcmToken(
       deviceId,
       dto.fcmToken,

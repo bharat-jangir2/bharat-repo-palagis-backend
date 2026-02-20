@@ -22,8 +22,8 @@ export class UserService {
         deviceId,
         deviceType,
         settings: {
-          notificationEnabled: true,
-          locationEnabled: true,
+          notificationEnabled: false,
+          locationEnabled: false,
         },
         isDeleted: false,
       });
@@ -92,13 +92,6 @@ export class UserService {
     return {
       settings: updatedUser?.settings,
     };
-  }
-
-  /**
-   * Update FCM token for user
-   */
-  async updateFcmToken(userId: string, fcmToken: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(userId, { fcmToken });
   }
 
   /**
