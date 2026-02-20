@@ -16,6 +16,7 @@ import { CreateTruckDto } from '../../dtos/create-truck.dto';
 import { UpdateTruckDto } from '../../dtos/update-truck.dto';
 import { UpdateTruckStatusDto } from '../../dtos/update-truck-status.dto';
 import { TruckFilterDto } from '../../dtos/truck-filter.dto';
+import { TruckSelectOptionsDto } from '../../dtos/truck-select-options.dto';
 import { Public } from 'src/app/decorators/public.decorator';
 
 @Controller('super-admin/trucks')
@@ -45,6 +46,24 @@ export class AdminTruckController {
       filterDto.page,
       filterDto.limit,
       filterDto.status,
+      filterDto.search,
+    );
+    return {
+      ...trucks,
+      userMessage: '',
+      userMessageCode: 'TRUCKS_FETCHED',
+      developerMessage: 'Trucks fetched successfully',
+    };
+  }
+
+  @Get('select-options')
+  @Version('1')
+  async getTrucksForSelectOptions(
+    @Query() filterDto: TruckSelectOptionsDto,
+  ) {
+    const trucks = await this.truckService.findAllTrucksForDropdown(
+      filterDto.page,
+      filterDto.limit,
       filterDto.search,
     );
     return {

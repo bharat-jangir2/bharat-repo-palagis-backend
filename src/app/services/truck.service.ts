@@ -280,6 +280,70 @@ export class TruckService {
     };
   }
 
+  async findAllTrucksForDropdown(
+    page: number = 1,
+    limit: number = 100,
+    search?: string,
+  ) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Math.min(100, Number(limit) || 100)); // Max 100 items per page
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // Build match conditions - only show active, non-deleted trucks
+    const matchConditions: any = { 
+      isDeleted: false,
+      truckStatus: TruckStatus.ACTIVE 
+    };
+
+    // If search is provided, add search matching for vehicleNumber and truckCode
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      // Sanitize search input - escape special regex characters
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      matchConditions.$or = [
+        { vehicleNumber: searchRegex },
+        { truckCode: searchRegex },
+      ];
+    }
+
+    // Simple aggregation for dropdown - only _id, truckCode, and vehicleNumber
+    const pipeline: any[] = [
+      { $match: matchConditions },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limitNumber },
+            {
+              $project: {
+                _id: 1,
+                truckCode: 1,
+                vehicleNumber: 1,
+              },
+            },
+          ],
+          total: [{ $count: 'count' }],
+        },
+      },
+    ];
+
+    const result = await this.truckModel.aggregate(pipeline);
+
+    const totalItems = result[0]?.total[0]?.count || 0;
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    return {
+      result: result[0]?.data || [],
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalItems,
+        totalPages,
+      },
+    };
+  }
+
   async findOne(id: string) {
     const result = await this.truckModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
