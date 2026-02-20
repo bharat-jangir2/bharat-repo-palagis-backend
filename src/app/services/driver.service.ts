@@ -258,8 +258,11 @@ export class DriverService {
     const limitNumber = Math.max(1, Math.min(100, Number(limit) || 100)); // Max 100 items per page
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Build match conditions
-    const matchConditions: any = { isDeleted: false };
+    // Build match conditions - only show active, non-deleted drivers
+    const matchConditions: any = { 
+      isDeleted: false,
+      accountStatus: AccountStatus.ACTIVE 
+    };
 
     // If search is provided, add search matching for fullName
     if (search && typeof search === 'string' && search.trim().length > 0) {
@@ -310,6 +313,11 @@ export class DriverService {
   }
 
   async findOne(id: string) {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException(`Driver with ID "${id}" not found`);
+    }
+
     const result = await this.driverModel.aggregate([
       { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
       // Lookup truck
