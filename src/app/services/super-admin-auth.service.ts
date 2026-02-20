@@ -53,13 +53,7 @@ export class SuperAdminAuthService {
       refreshToken,
     };
 
-    return {
-      userMessage: 'Login successfully',
-      userMessageCode: 'LOGIN_SUCCESS',
-      developerMessage: 'Login successfully',
-      result: loginResponse,
-      
-    };
+    return loginResponse;
   }
 
   /**
@@ -130,13 +124,8 @@ export class SuperAdminAuthService {
     );
 
     return {
-      userMessage: 'Token refreshed successfully',
-      userMessageCode: 'TOKEN_REFRESHED',
-      developerMessage: 'Token refreshed successfully',
-      result: {
-        accessToken,
-        refreshToken: newRefreshToken,
-      },
+      accessToken,
+      refreshToken: newRefreshToken,
     };
   }
 

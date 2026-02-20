@@ -265,9 +265,6 @@ export class TruckService {
     const totalPages = Math.ceil(totalItems / limitNumber);
 
     return {
-      userMessage: '',
-      userMessageCode: 'TRUCKS_FETCHED',
-      developerMessage: 'Trucks fetched successfully',
       result: result[0]?.data || [],
       meta: {
         totalTrucks,
@@ -488,12 +485,7 @@ export class TruckService {
       },
     ]);
 
-    return {
-      userMessage: 'Truck Updated Successfully',
-      userMessageCode: 'TRUCK_UPDATED',
-      developerMessage: 'Truck Updated Successfully',
-      result: result[0],
-    };
+    return result[0];
   }
 
   async updateTruckStatus(id: string, truckStatus: TruckStatus) {
@@ -602,12 +594,7 @@ export class TruckService {
       },
     ]);
 
-    return {
-      userMessage: 'Truck status updated successfully',
-      userMessageCode: 'TRUCK_STATUS_UPDATED',
-      developerMessage: `Truck status updated to ${truckStatus}`,
-      result: result[0],
-    };
+    return result[0];
   }
 
   async deleteTruck(id: string): Promise<any> {
@@ -624,11 +611,6 @@ export class TruckService {
     await this.truckModel.findByIdAndUpdate(id, {
       isDeleted: true,
     }).exec();
-    return {
-      userMessage: 'Truck deleted successfully',
-      userMessageCode: 'TRUCK_DELETED',
-      developerMessage: `Truck with ID ${id} deleted successfully`,
-    }
   }
 
   // Find trucks near a location (for proximity queries)

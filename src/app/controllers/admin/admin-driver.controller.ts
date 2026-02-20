@@ -26,7 +26,13 @@ export class AdminDriverController {
   @Version('1')
   @HttpCode(HttpStatus.CREATED)
   async createDriver(@Body() createDriverDto: CreateDriverDto) {
-    return this.driverService.create(createDriverDto);
+    const driver = await this.driverService.create(createDriverDto);
+    return {
+      ...driver,
+      userMessage: 'Driver created successfully',
+      userMessageCode: 'DRIVER_CREATED',
+      developerMessage: `Driver with code ${driver.driverCode} has been created`,
+    };
   }
 
   @Get()

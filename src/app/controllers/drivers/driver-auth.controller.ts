@@ -32,11 +32,17 @@ export class DriverAuthController {
     @Headers('x-device-type') deviceType: string,
   ) {
     // Headers are validated by DeviceHeadersGuard
-    return await this.driverAuthService.login({
+    const result = await this.driverAuthService.login({
       ...dto,
       deviceId,
       deviceType: deviceType as DeviceType,
     });
+    return {
+      result,
+      userMessage: 'Login successfully',
+      userMessageCode: 'LOGIN_SUCCESS',
+      developerMessage: 'Login successfully',
+    };
   }
 
   @Public()
@@ -54,10 +60,16 @@ export class DriverAuthController {
       throw new BadRequestException('Device ID is required in header or body');
     }
 
-    return await this.driverAuthService.refreshToken(
+    const result = await this.driverAuthService.refreshToken(
       refreshTokenDto.refreshToken,
       finalDeviceId,
     );
+    return {
+      result,
+      userMessage: 'Token refreshed successfully',
+      userMessageCode: 'TOKEN_REFRESHED',
+      developerMessage: 'Token refreshed successfully',
+    };
   }
 
   @UseGuards(JwtAuthGuard)

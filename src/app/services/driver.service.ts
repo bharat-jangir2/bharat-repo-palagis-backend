@@ -299,9 +299,6 @@ export class DriverService {
     const totalPages = Math.ceil(totalItems / limitNumber);
 
     return {
-      userMessage: '',
-      userMessageCode: 'DRIVERS_FETCHED',
-      developerMessage: 'Drivers fetched successfully',
       result: result[0]?.data || [],
       pagination: {
         page: pageNumber,
