@@ -38,7 +38,7 @@ export class Driver {
   truckId?: Types.ObjectId;
 
   @Prop({ required: true })
-  passcode: string; // Hashed 6-digit passcode for login
+  passcode: string; // Plain text 6-digit passcode for login
 
   @Prop({ default: true })
   isActive?: boolean;

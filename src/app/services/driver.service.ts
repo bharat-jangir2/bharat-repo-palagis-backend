@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import * as bcrypt from 'bcrypt';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
 import { Driver, DriverDocument, AccountStatus, DutyStatus } from '../entities/driver.entity';
@@ -65,8 +64,7 @@ export class DriverService {
     // Generate random 6-digit passcode
     const plainPasscode = this.generatePasscode();
     
-    // Hash the passcode before storing
-    const hashedPasscode = await bcrypt.hash(plainPasscode, 10);
+    // Store passcode as plain text (no hashing)
 
     // Create driver
     const createdDriver = await this.driverModel.create({
@@ -75,7 +73,7 @@ export class DriverService {
       email: createDriverDto.email,
       phone: createDriverDto.phone,
       truckId: truckIdValue ? new Types.ObjectId(truckIdValue) : undefined,
-      passcode: hashedPasscode,
+      passcode: plainPasscode, // Store as plain text
       isActive: true, // Default to active
       accountStatus: createDriverDto.accountStatus,
       dutyStatus: createDriverDto.dutyStatus || DutyStatus.OFFDUTY, // Default to offduty
@@ -113,12 +111,8 @@ export class DriverService {
       },
     ]);
 
-    // Return result with plain passcode (only in create response, for admin to share with driver)
-    // Note: passcode is stored hashed in DB, but we return plain text here since we have it before hashing
-    return {
-      ...result[0],
-      passcode: plainPasscode, // Return plain passcode only on creation
-    };
+    // Return result without passcode (excluded from create response)
+    return result[0];
   }
 
   /**
@@ -214,6 +208,7 @@ export class DriverService {
               phone: 1,
               licenseNumber: 1,
               address: 1,
+              passcode: 1, // Include passcode in listing
               truck: {
                 $cond: {
                   if: { $ifNull: ['$truck._id', false] },
@@ -355,6 +350,7 @@ export class DriverService {
           phone: 1,
           licenseNumber: 1,
           address: 1,
+          passcode: 1, // Include passcode in get by id
           truck: {
             $cond: {
               if: { $ifNull: ['$truck._id', false] },
@@ -704,9 +700,8 @@ export class DriverService {
       throw new UnauthorizedException('Invalid driver code or passcode');
     }
 
-    // Compare provided passcode with stored hashed passcode
-    const isValid = await bcrypt.compare(passcode, driver.passcode);
-    if (!isValid) {
+    // Compare provided passcode with stored plain text passcode
+    if (driver.passcode !== passcode) {
       throw new UnauthorizedException('Invalid driver code or passcode');
     }
 
