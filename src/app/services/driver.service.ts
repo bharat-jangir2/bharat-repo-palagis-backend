@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import { CreateDriverDto } from '../dtos/create-driver.dto';
 import { UpdateDriverDto } from '../dtos/update-driver.dto';
 import { Driver, DriverDocument, AccountStatus, DutyStatus } from '../entities/driver.entity';
@@ -8,15 +9,21 @@ import { Truck, TruckDocument } from '../entities/truck.entity';
 import { DriverStatusLogService } from './driver-status-log.service';
 import { CounterService } from './counter.service';
 import { TokenService } from './token.service';
+import { EmailService } from './email.service';
+import { DriverRegistrationTemplate } from '../templates/email/driver-registration.template';
 
 @Injectable()
 export class DriverService {
+  private readonly logger = new Logger(DriverService.name);
+
   constructor(
     @InjectModel(Driver.name) private driverModel: Model<DriverDocument>,
     @InjectModel(Truck.name) private truckModel: Model<TruckDocument>,
     private driverStatusLogService: DriverStatusLogService,
     private counterService: CounterService,
     private tokenService: TokenService,
+    private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
@@ -110,6 +117,37 @@ export class DriverService {
         },
       },
     ]);
+
+    // Send welcome email to driver (non-blocking - don't fail if email fails)
+    try {
+      const emailConfig = this.configService.get('email');
+      const logoUrl = emailConfig?.logoUrl || 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Logo_Public.png';
+
+      const emailSent = await this.emailService.sendEmail({
+        to: createdDriver.email,
+        subject: DriverRegistrationTemplate.getSubject(),
+        text: DriverRegistrationTemplate.getText({
+          driverName: createdDriver.fullName,
+          driverCode: createdDriver.driverCode,
+          passcode: plainPasscode,
+        }),
+        html: DriverRegistrationTemplate.getHtml({
+          driverName: createdDriver.fullName,
+          driverCode: createdDriver.driverCode,
+          passcode: plainPasscode,
+          logoUrl,
+        }),
+      });
+
+      if (emailSent) {
+        this.logger.log(`Welcome email sent successfully to driver ${createdDriver.email}`);
+      } else {
+        this.logger.warn(`Failed to send welcome email to driver ${createdDriver.email}`);
+      }
+    } catch (error) {
+      // Log error but don't fail driver creation if email fails
+      this.logger.error(`Error sending welcome email to driver ${createdDriver.email}: ${error.message}`);
+    }
 
     // Return result without passcode (excluded from create response)
     return result[0];

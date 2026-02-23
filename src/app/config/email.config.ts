@@ -9,5 +9,6 @@ export default () => ({
     },
     from: process.env.SMTP_EMAIL_FROM || process.env.SMTP_USER || '',
     fromName: process.env.SMTP_FROM_NAME || '',
+    logoUrl: process.env.EMAIL_LOGO_URL || '', // URL to the logo image (optional)
   },
 });
