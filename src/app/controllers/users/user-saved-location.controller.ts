@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { SavedLocationService } from '../../services/saved-location.service';
 import { CreateSavedLocationDto } from '../../dtos/create-saved-location.dto';
 import { UpdateSavedLocationDto } from '../../dtos/update-saved-location.dto';
+import { SavedLocationFilterDto } from '../../dtos/saved-location-filter.dto';
 import { UserType } from '../../entities/token.entity';
 
 @Controller('users/saved-locations')
@@ -71,8 +72,7 @@ export class UserSavedLocationController {
   @Version('1')
   async getMySavedLocations(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query() filterDto: SavedLocationFilterDto,
   ) {
     const { userId, userType } = req.user;
 
@@ -82,8 +82,8 @@ export class UserSavedLocationController {
 
     const locations = await this.savedLocationService.findAllByUserId(
       userId,
-      page,
-      limit,
+      filterDto.page,
+      filterDto.limit,
     );
 
     return {

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DriverService } from '../../services/driver.service';
-import { DriverStatusUpdateDto } from '../../dtos/driver-status-update.dto';
+import { DriverDutyStatusUpdateDto } from '../../dtos/driver-duty-status-update.dto';
 import { UserType } from '../../entities/token.entity';
 
 @Controller('drivers')
@@ -24,7 +24,7 @@ export class DriverStatusController {
   @HttpCode(HttpStatus.OK)
   async updateStatus(
     @Request() req,
-    @Body() updateDto: DriverStatusUpdateDto,
+    @Body() updateDto: DriverDutyStatusUpdateDto,
   ) {
     const { userId, userType } = req.user;
 
@@ -32,25 +32,10 @@ export class DriverStatusController {
       throw new UnauthorizedException('Invalid driver token');
     }
 
-    // Validate at least one field is provided
-    if (updateDto.accountStatus === undefined && updateDto.dutyStatus === undefined && updateDto.truckId === undefined) {
-      throw new UnauthorizedException('At least one field (accountStatus, dutyStatus, or truckId) must be provided');
-    }
-
-    // Build update object with only provided fields - directly compatible with UpdateDriverDto
-    const updateData: any = {};
-    if (updateDto.accountStatus !== undefined) {
-      updateData.accountStatus = updateDto.accountStatus;
-    }
-    if (updateDto.dutyStatus !== undefined) {
-      updateData.dutyStatus = updateDto.dutyStatus;
-    }
-    if (updateDto.truckId !== undefined) {
-      updateData.truckId = updateDto.truckId;
-    }
-
-    // Use the existing update method which handles status logging and truck sync
-    const driver = await this.driverService.update(userId, updateData);
+    // Update only duty status
+    const driver = await this.driverService.update(userId, {
+      dutyStatus: updateDto.driverStatus,
+    });
 
     return {
       result: {
@@ -67,9 +52,9 @@ export class DriverStatusController {
         createdAt: driver.createdAt,
         updatedAt: driver.updatedAt,
       },
-      userMessage: 'Status updated successfully',
-      userMessageCode: 'STATUS_UPDATED',
-      developerMessage: 'Driver status and/or truck updated successfully',
+      userMessage: 'Duty status updated successfully',
+      userMessageCode: 'DUTY_STATUS_UPDATED',
+      developerMessage: `Driver duty status updated to ${updateDto.driverStatus}`,
     };
   }
 }

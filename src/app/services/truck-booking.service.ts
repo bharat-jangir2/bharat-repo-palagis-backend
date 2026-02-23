@@ -42,7 +42,7 @@ export class TruckBookingService {
         coordinates: createDto.eventLocation.coordinates,
         address: createDto.eventLocation.address || '',
       },
-      bookingDate: new Date(createDto.bookingDate),
+      bookingDate: createDto.bookingDate,
       bookingTime: createDto.bookingTime,
       bookingNote: createDto.bookingNote,
       status: TruckBookingStatus.PENDING,

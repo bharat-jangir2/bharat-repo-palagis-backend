@@ -67,8 +67,8 @@ export class TruckBooking {
   };
 
   // Separate date and time fields from the UI
-  @Prop({ type: Date, required: true })
-  bookingDate: Date; // Date portion (e.g., 2024-02-15)
+  @Prop({ type: String, required: true })
+  bookingDate: string; // Date string (e.g., "2024-02-15")
 
   @Prop({ type: String, required: true })
   bookingTime: string; // Time string (e.g., "14:00" or "2:00 PM")
