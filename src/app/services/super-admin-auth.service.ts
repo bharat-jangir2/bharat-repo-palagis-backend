@@ -107,8 +107,7 @@ export class SuperAdminAuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    // Generate new access token and refresh token with same userId and userType
-    // This will update the token entity in the database
+    // Generate new access token
     const accessToken = await this.tokenService.generateAccessToken(
       deviceId,
       token.deviceType,
@@ -116,16 +115,29 @@ export class SuperAdminAuthService {
       UserType.SUPER_ADMIN,
     );
 
-    const newRefreshToken = await this.tokenService.generateRefreshToken(
-      deviceId,
-      token.deviceType,
-      payload.userId,
-      UserType.SUPER_ADMIN,
-    );
+    // Check if refresh token is close to expiring (less than 1 day remaining)
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    const timeUntilExpiry = token.expiresAt.getTime() - Date.now();
+    const shouldRotateRefreshToken = timeUntilExpiry < oneDayInMs;
+
+    let finalRefreshToken = refreshToken;
+
+    // Only generate new refresh token if current one is close to expiring
+    if (shouldRotateRefreshToken) {
+      // Invalidate old refresh token before generating new one
+      await this.tokenService.invalidateToken(refreshToken);
+      
+      finalRefreshToken = await this.tokenService.generateRefreshToken(
+        deviceId,
+        token.deviceType,
+        payload.userId,
+        UserType.SUPER_ADMIN,
+      );
+    }
 
     return {
       accessToken,
-      refreshToken: newRefreshToken,
+      refreshToken: finalRefreshToken,
     };
   }
 
