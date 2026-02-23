@@ -92,6 +92,55 @@ export class SavedLocationService {
   }
 
   /**
+   * Find all saved locations with alerts enabled for a user
+   */
+  async findAlertsByUserId(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Math.min(50, Number(limit) || 20));
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const matchConditions = {
+      userId: new Types.ObjectId(userId),
+      isDeleted: false,
+      'alertConfig.alertEnabled': true,
+    };
+
+    const [locations, totalItems] = await Promise.all([
+      this.savedLocationModel
+        .find(matchConditions)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNumber)
+        .select({
+          locationName: 1,
+          location: 1,
+          type: 1,
+          alertConfig: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        })
+        .lean(),
+      this.savedLocationModel.countDocuments(matchConditions),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    return {
+      result: locations,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalItems,
+        totalPages,
+      },
+    };
+  }
+
+  /**
    * Find a saved location by ID (only for the owner)
    */
   async findOneForUser(

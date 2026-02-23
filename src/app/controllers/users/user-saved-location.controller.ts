@@ -95,6 +95,35 @@ export class UserSavedLocationController {
   }
 
   /**
+   * Get all saved locations with alerts enabled (My Alerts)
+   */
+  @Get('my-alerts')
+  @Version('1')
+  async getMyAlerts(
+    @Request() req,
+    @Query() filterDto: SavedLocationFilterDto,
+  ) {
+    const { userId, userType } = req.user;
+
+    if (!userId || userType !== UserType.USER) {
+      throw new UnauthorizedException('Invalid user token');
+    }
+
+    const locations = await this.savedLocationService.findAlertsByUserId(
+      userId,
+      filterDto.page,
+      filterDto.limit,
+    );
+
+    return {
+      ...locations,
+      userMessage: '',
+      userMessageCode: 'ALERTS_FETCHED',
+      developerMessage: 'Alert locations fetched successfully',
+    };
+  }
+
+  /**
    * Get a saved location by ID
    */
   @Get(':locationId')
