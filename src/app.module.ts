@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import databaseConfig from './app/config/database.config';
 import firebaseConfig from './app/config/firebase.config';
 import jwtConfig from './app/config/jwt.config';
+import emailConfig from './app/config/email.config';
 // User App Controllers
 import { UserController } from './app/controllers/users/user.controller';
 import { UserTruckController } from './app/controllers/users/user-truck.controller';
@@ -68,6 +69,7 @@ import { UserBookingController } from './app/controllers/users/user-booking.cont
 import { UserSavedLocationController } from './app/controllers/users/user-saved-location.controller';
 import { TruckBookingService } from './app/services/truck-booking.service';
 import { SavedLocationService } from './app/services/saved-location.service';
+import { EmailService } from './app/services/email.service';
 import { SavedLocation, SavedLocationSchema } from './app/entities/saved-location.entity';
 import { TestController } from './app/controllers/test/test.controller';
 
@@ -78,7 +80,7 @@ const logger = new Logger('Database');
     // Environment configuration
     ConfigModule.forRoot({
       isGlobal: true, 
-      load: [databaseConfig, firebaseConfig, jwtConfig],
+      load: [databaseConfig, firebaseConfig, jwtConfig, emailConfig],
       cache: true,
       // Use single .env file
       envFilePath: '.env',
@@ -170,6 +172,7 @@ const logger = new Logger('Database');
     UserAuthService,
     TruckBookingService,
     SavedLocationService,
+    EmailService,
     // Auth providers
     JwtStrategy,
     TokenService,
