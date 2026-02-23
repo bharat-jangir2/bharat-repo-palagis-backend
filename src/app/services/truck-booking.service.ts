@@ -187,6 +187,7 @@ export class TruckBookingService {
     }
 
     // Base match conditions for meta statistics - filtered by type if provided
+    // NOTE: Meta stats are NOT filtered by search - they show overall statistics
     const metaMatchConditions: any = {
       isDeleted: false,
     };
@@ -196,14 +197,7 @@ export class TruckBookingService {
       metaMatchConditions.type = type;
     }
 
-    // Add search filter to meta if provided (for accurate statistics)
-    if (search) {
-      metaMatchConditions.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { 'eventLocation.address': { $regex: search, $options: 'i' } },
-      ];
-    }
+    // Search filter is NOT applied to meta statistics - only to result list
 
     // Parallel queries for bookings and statistics
     const [
