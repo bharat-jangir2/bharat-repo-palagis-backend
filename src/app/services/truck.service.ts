@@ -725,6 +725,156 @@ export class TruckService {
   }
 
   /**
+   * Search trucks by location with radius and optional text search
+   * @param latitude Latitude of search center
+   * @param longitude Longitude of search center
+   * @param radiusMiles Radius in miles (default: 50)
+   * @param searchText Optional text search for truck codes, vehicle numbers, or addresses
+   * @param page Page number
+   * @param limit Items per page
+   * @returns Trucks within radius with distance in miles
+   */
+  async searchTrucksByLocation(
+    latitude: number,
+    longitude: number,
+    radiusMiles: number = 50,
+    searchText?: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Math.min(100, Number(limit) || 20));
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // Convert miles to meters for MongoDB geospatial query
+    const maxDistanceMeters = radiusMiles * 1609.34; // 1 mile = 1609.34 meters
+
+    // Build aggregation pipeline
+    const pipeline: any[] = [
+      // GeoNear must be first stage
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [longitude, latitude],
+          },
+          distanceField: 'distance', // Distance in meters
+          maxDistance: maxDistanceMeters,
+          spherical: true,
+          query: { isDeleted: false, truckStatus: TruckStatus.ACTIVE }, // Only active, non-deleted trucks
+        },
+      },
+      // Lookup driver information
+      {
+        $lookup: {
+          from: 'drivers',
+          localField: 'driverId',
+          foreignField: '_id',
+          as: 'driver',
+          pipeline: [
+            { $match: { isDeleted: false } },
+          ],
+        },
+      },
+      // Unwind driver array
+      {
+        $unwind: {
+          path: '$driver',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ];
+
+    // Add text search filter if provided
+    if (searchText && typeof searchText === 'string' && searchText.trim().length > 0) {
+      const sanitizedSearch = searchText.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
+      
+      pipeline.push({
+        $match: {
+          $or: [
+            { vehicleNumber: searchRegex },
+            { truckCode: searchRegex },
+            { 'location.address': searchRegex },
+            { vehicleModel: searchRegex },
+          ],
+        },
+      });
+    }
+
+    // Add pagination and projection
+    pipeline.push({
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limitNumber },
+          {
+            $project: {
+              _id: 1,
+              truckCode: 1,
+              vehicleNumber: 1,
+              vehicleModel: 1,
+              truckName: 1,
+              location: {
+                coordinates: '$location.coordinates',
+                address: '$location.address',
+              },
+              // Convert distance from meters to miles and round to 1 decimal
+              distanceMiles: {
+                $round: [
+                  {
+                    $divide: ['$distance', 1609.34], // Convert meters to miles
+                  },
+                  1,
+                ],
+              },
+              driver: {
+                $cond: {
+                  if: { $ifNull: ['$driver._id', false] },
+                  then: {
+                    _id: { $toString: '$driver._id' },
+                    fullName: '$driver.fullName',
+                    email: '$driver.email',
+                    phone: '$driver.phone',
+                  },
+                  else: null,
+                },
+              },
+              truckStatus: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    });
+
+    const result = await this.truckModel.aggregate(pipeline);
+
+    const totalItems = result[0]?.total[0]?.count || 0;
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    return {
+      result: result[0]?.data || [],
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalItems,
+        totalPages,
+      },
+      meta: {
+        center: {
+          latitude,
+          longitude,
+        },
+        radiusMiles,
+        totalFound: totalItems,
+      },
+    };
+  }
+
+  /**
    * Update location (lat, lng, address) for the truck assigned to a driver.
    * Used by the driver app when sending live location updates.
    */
