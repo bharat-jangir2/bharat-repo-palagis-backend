@@ -10,6 +10,9 @@ import {
   HttpStatus,
   Version,
   Query,
+  UseGuards,
+  Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { DriverService } from '../../services/driver.service';
 import { CreateDriverDto } from '../../dtos/create-driver.dto';
@@ -17,8 +20,11 @@ import { UpdateDriverDto } from '../../dtos/update-driver.dto';
 import { UpdateDriverStatusDto } from '../../dtos/update-driver-status.dto';
 import { DriverFilterDto } from '../../dtos/driver-filter.dto';
 import { DriverSelectOptionsDto } from '../../dtos/driver-select-options.dto';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { UserType } from '../../entities/token.entity';
 
 @Controller('super-admin/drivers')
+@UseGuards(JwtAuthGuard)
 export class AdminDriverController {
   constructor(private readonly driverService: DriverService) {}
 
@@ -70,15 +76,50 @@ export class AdminDriverController {
   @Version('1')
   @HttpCode(HttpStatus.OK)
   async updateDriverStatus(
+    @Request() req,
     @Param('driverId') driverId: string,
     @Body() updateDriverStatusDto: UpdateDriverStatusDto,
   ) {
+    const { userType } = req.user;
+
+    if (userType !== UserType.SUPER_ADMIN) {
+      throw new UnauthorizedException('Invalid super admin token');
+    }
+
     const driver = await this.driverService.updateStatus(driverId, updateDriverStatusDto.accountStatus);
     return {
       ...driver,
       userMessage: 'Driver status updated successfully',
       userMessageCode: 'DRIVER_STATUS_UPDATED',
       developerMessage: `Driver account status updated to ${updateDriverStatusDto.accountStatus}`,
+    };
+  }
+
+  @Post(':driverId/regenerate-passcode')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async regeneratePasscode(
+    @Request() req,
+    @Param('driverId') driverId: string,
+  ) {
+    const { userType } = req.user;
+
+    if (userType !== UserType.SUPER_ADMIN) {
+      throw new UnauthorizedException('Invalid super admin token');
+    }
+
+    const driver = await this.driverService.regeneratePasscode(driverId);
+    return {
+      result: {
+        _id: driver._id,
+        driverCode: driver.driverCode,
+        fullName: driver.fullName,
+        email: driver.email,
+        phone: driver.phone,
+      },
+      userMessage: 'Passcode regenerated and email sent successfully',
+      userMessageCode: 'PASSCODE_REGENERATED',
+      developerMessage: `New passcode generated for driver ${driver.driverCode} and email sent to ${driver.email}`,
     };
   }
 

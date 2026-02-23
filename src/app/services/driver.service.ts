@@ -163,6 +163,74 @@ export class DriverService {
     return Math.floor(Math.random() * (max - min + 1) + min).toString();
   }
 
+  /**
+   * Regenerate passcode for a driver and send email notification
+   * @param driverId Driver ID
+   * @returns Updated driver document
+   */
+  async regeneratePasscode(driverId: string): Promise<DriverDocument> {
+    if (!Types.ObjectId.isValid(driverId)) {
+      throw new NotFoundException('Invalid driver ID');
+    }
+
+    // Find driver
+    const driver = await this.driverModel.findOne({
+      _id: driverId,
+      isDeleted: false,
+    });
+
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    // Generate new passcode
+    const newPasscode = this.generatePasscode();
+
+    // Update driver with new passcode
+    const updatedDriver = await this.driverModel.findByIdAndUpdate(
+      driverId,
+      { passcode: newPasscode },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedDriver) {
+      throw new NotFoundException('Driver not found after update');
+    }
+
+    // Send email with new passcode (non-blocking)
+    try {
+      const emailConfig = this.configService.get('email');
+      const logoUrl = emailConfig?.logoUrl || undefined;
+
+      const emailSent = await this.emailService.sendEmail({
+        to: updatedDriver.email,
+        subject: DriverRegistrationTemplate.getSubject(),
+        text: DriverRegistrationTemplate.getText({
+          driverName: updatedDriver.fullName,
+          driverCode: updatedDriver.driverCode,
+          passcode: newPasscode,
+        }),
+        html: DriverRegistrationTemplate.getHtml({
+          driverName: updatedDriver.fullName,
+          driverCode: updatedDriver.driverCode,
+          passcode: newPasscode,
+          logoUrl,
+        }),
+      });
+
+      if (emailSent) {
+        this.logger.log(`Passcode regeneration email sent successfully to driver ${updatedDriver.email}`);
+      } else {
+        this.logger.warn(`Failed to send passcode regeneration email to driver ${updatedDriver.email}`);
+      }
+    } catch (error) {
+      // Log error but don't fail passcode regeneration if email fails
+      this.logger.error(`Error sending passcode regeneration email to driver ${updatedDriver.email}: ${error.message}`);
+    }
+
+    return updatedDriver;
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 10,
