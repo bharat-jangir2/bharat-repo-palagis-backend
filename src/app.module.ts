@@ -24,6 +24,7 @@ import { DriverTruckLocationController } from './app/controllers/drivers/driver-
 // Admin Controllers
 import { AdminTruckController } from './app/controllers/admin/admin-truck.controller';
 import { AdminDriverController } from './app/controllers/admin/admin-driver.controller';
+import { AdminBookingController } from './app/controllers/admin/admin-booking.controller';
 import { AppService } from './app/services/app.service';
 import { TruckService } from './app/services/truck.service';
 import { DriverService } from './app/services/driver.service';
@@ -148,6 +149,7 @@ const logger = new Logger('Database');
     // Admin Controllers (Admin Panel - Full CRUD)
     AdminTruckController,
     AdminDriverController,
+    AdminBookingController,
     SuperAdminAuthController,
     SuperAdminProfileController,
     // Test Controllers
