@@ -63,6 +63,17 @@ export class EmailService {
     html?: string;
   }): Promise<boolean> {
     try {
+      const emailConfig = this.configService.get('email');
+      
+      // Check if email sending is enabled
+      if (emailConfig.enabled === false) {
+        const validTo = await this.filterValidRecipients(to);
+        this.logger.log(
+          `[EMAIL DISABLED] Email sending is disabled. Would have sent to: ${validTo.join(', ')}, Subject: ${subject}`,
+        );
+        return true; // Return true so calling code doesn't break
+      }
+
       // Filter out invalid emails
       const validTo = await this.filterValidRecipients(to);
       const validCc = await this.filterValidRecipients(cc);
@@ -73,8 +84,6 @@ export class EmailService {
         this.logger.warn(`No valid recipients for email: ${subject}`);
         return false;
       }
-
-      const emailConfig = this.configService.get('email');
       
       if (!emailConfig.from) {
         this.logger.error('SMTP_EMAIL_FROM is not configured');

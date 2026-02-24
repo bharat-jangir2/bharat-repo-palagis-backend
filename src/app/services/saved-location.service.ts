@@ -210,7 +210,7 @@ export class SavedLocationService {
         isDeleted: false,
       },
       { $set: updateData },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!location) {

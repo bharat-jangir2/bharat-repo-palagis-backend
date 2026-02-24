@@ -11,6 +11,7 @@ import { CounterService } from './counter.service';
 import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import { DriverRegistrationTemplate } from '../templates/email/driver-registration.template';
+import * as crypto from "crypto";
 
 @Injectable()
 export class DriverService {
@@ -154,13 +155,49 @@ export class DriverService {
   }
 
   /**
+   * Shuffle the passcode to avoid predictable pattern
+   * @param passcode Passcode to shuffle
+   * @returns Shuffled passcode
+   */
+  private shufflePasscode = (passcode: string): string => {
+    const charArray = passcode.split('');
+  
+    // Fisher–Yates using crypto
+    for (let i = charArray.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(0, i + 1); // max is exclusive
+      [charArray[i], charArray[j]] = [charArray[j], charArray[i]];
+    }
+  
+    return charArray.join('');
+  };
+  
+
+  /**
    * Generate a random 6-digit passcode
    */
   private generatePasscode(): string {
-    // Generate random number between 100000 and 999999
-    const min = 100000;
-    const max = 999999;
-    return Math.floor(Math.random() * (max - min + 1) + min).toString();
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '!@#$&';
+    const all = upper + lower + numbers + special;
+  
+    const getRandomChar = (chars: string): string =>
+      chars[crypto.randomInt(0, chars.length)];
+  
+    // Ensure required characters
+    let passcode =
+      getRandomChar(upper) +
+      getRandomChar(numbers) +
+      getRandomChar(special);
+  
+    // Fill remaining characters to total length 8
+    for (let i = passcode.length; i < 8; i++) {
+      passcode += getRandomChar(all);
+    }
+  
+    // Shuffle to remove predictable pattern
+    return this.shufflePasscode(passcode);
   }
 
   /**
@@ -190,7 +227,7 @@ export class DriverService {
     const updatedDriver = await this.driverModel.findByIdAndUpdate(
       driverId,
       { passcode: newPasscode },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updatedDriver) {
@@ -621,7 +658,7 @@ export class DriverService {
       },
       {
         $project: {
-          _id: 1,
+          _id: 1, 
           driverCode: 1,
           fullName: 1,
           email: 1,

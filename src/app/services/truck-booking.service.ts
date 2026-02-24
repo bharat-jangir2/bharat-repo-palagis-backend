@@ -292,7 +292,7 @@ export class TruckBookingService {
         status,
       },
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       },
     );
