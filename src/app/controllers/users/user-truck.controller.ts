@@ -40,7 +40,9 @@ export class UserTruckController {
   async getTrucksNear(
     @Query() findNearDto: FindNearDto,
   ) {
-    const trucks = await this.truckService.findNear(
+
+    
+    const trucks = await this.truckService.findNearByTrcuks(
       findNearDto.longitude,
       findNearDto.latitude,
       findNearDto.maxDistance,

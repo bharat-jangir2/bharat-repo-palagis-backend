@@ -678,7 +678,10 @@ export class TruckService {
   }
 
   // Find trucks near a location (for proximity queries)
-  async findNear(longitude: number, latitude: number, maxDistance: number = 10000) {
+  async findNearByTrcuks(longitude: number, latitude: number, maxDistance: number = 10000) {
+
+    const maxDistanceMeters = maxDistance * 1609.34; // Convert miles to meters
+
     return this.truckModel.aggregate([
       {
         $geoNear: {
@@ -687,7 +690,7 @@ export class TruckService {
             coordinates: [longitude, latitude],
           },
           distanceField: 'distance',
-          maxDistance: maxDistance,
+          maxDistance: maxDistanceMeters,
           spherical: true,
         },
       },
@@ -698,6 +701,13 @@ export class TruckService {
           truckCode: 1,
           vehicleNumber: 1,
           vehicleModel: 1,
+          // Distance from given coordinates in miles (1 decimal place)
+          distanceMiles: {
+            $round: [
+              { $divide: ['$distance', 1609.34] }, // meters -> miles
+              2,
+            ],
+          },
           driver: {
             $cond: {
               if: { $ifNull: ['$driver._id', false] },
