@@ -72,6 +72,8 @@ import { SavedLocationService } from './app/services/saved-location.service';
 import { EmailService } from './app/services/email.service';
 import { SavedLocation, SavedLocationSchema } from './app/entities/saved-location.entity';
 import { TestController } from './app/controllers/test/test.controller';
+import { QueueModule } from './queues/common/queue.module';
+import { EmailQueueModule } from './queues/email/email-queue.module';
 
 const logger = new Logger('Database');
 
@@ -131,6 +133,9 @@ const logger = new Logger('Database');
     ]),
     // Firebase / Notifications
     NotificationsModule,
+    // Queues
+    QueueModule,
+    EmailQueueModule,
   ],
   controllers: [
     // User App Controllers (User-facing mobile app)
@@ -173,6 +178,7 @@ const logger = new Logger('Database');
     TruckBookingService,
     SavedLocationService,
     EmailService,
+    // Queue services are provided by EmailQueueModule
     // Auth providers
     JwtStrategy,
     TokenService,

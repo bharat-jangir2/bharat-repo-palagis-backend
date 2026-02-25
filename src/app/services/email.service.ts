@@ -18,29 +18,20 @@ export class EmailService {
         user: emailConfig.auth.user,
         pass: emailConfig.auth.pass,
       },
+      // debug: true, // Enable debug output
+      // logger: true, // Enable logging
+    });
+
+    // Verify SMTP connection on startup
+    this.transporter.verify((error, success) => {
+      if (error) {
+        this.logger.error(`❌ SMTP connection verification failed: ${error.message}`);
+      } else {
+        this.logger.log(`✅ SMTP connection verified successfully (host=${emailConfig.host}, port=${emailConfig.port})`);
+      }
     });
   }
 
-  /**
-   * Filter out suppressed or invalid email addresses
-   * TODO: Implement email suppression logic if needed
-   */
-  private async filterValidRecipients(
-    emails: string | string[] | undefined,
-  ): Promise<string[]> {
-    if (!emails) return [];
-    
-    const emailArray = Array.isArray(emails) ? emails : [emails];
-    
-    // Filter out empty strings and invalid emails
-    return emailArray.filter(
-      (email) => email && email.trim() && email.includes('@'),
-    );
-    
-    // TODO: Add suppression list check here if needed
-    // const suppressedEmails = await this.getSuppressedEmails();
-    // return emailArray.filter(email => !suppressedEmails.includes(email));
-  }
 
   /**
    * Send email with support for CC, BCC, and multiple recipients
@@ -67,21 +58,21 @@ export class EmailService {
       
       // Check if email sending is enabled
       if (emailConfig.enabled === false) {
-        const validTo = await this.filterValidRecipients(to);
+        const toArray = Array.isArray(to) ? to : [to];
         this.logger.log(
-          `[EMAIL DISABLED] Email sending is disabled. Would have sent to: ${validTo.join(', ')}, Subject: ${subject}`,
+          `[EMAIL DISABLED] Email sending is disabled. Would have sent to: ${toArray.join(', ')}, Subject: ${subject}`,
         );
         return true; // Return true so calling code doesn't break
       }
 
-      // Filter out invalid emails
-      const validTo = await this.filterValidRecipients(to);
-      const validCc = await this.filterValidRecipients(cc);
-      const validBcc = await this.filterValidRecipients(bcc);
+      // Normalize to arrays for Nodemailer (emails are already validated before enqueueing)
+      const toArray = Array.isArray(to) ? to : [to];
+      const ccArray = Array.isArray(cc) ? cc : cc ? [cc] : [];
+      const bccArray = Array.isArray(bcc) ? bcc : bcc ? [bcc] : [];
 
-      // Skip if no valid recipients
-      if (validTo.length === 0 && validCc.length === 0 && validBcc.length === 0) {
-        this.logger.warn(`No valid recipients for email: ${subject}`);
+      // Skip if no recipients
+      if (toArray.length === 0 && ccArray.length === 0 && bccArray.length === 0) {
+        this.logger.warn(`No recipients for email: ${subject}`);
         return false;
       }
       
@@ -95,22 +86,57 @@ export class EmailService {
         ? `"${emailConfig.fromName}" <${emailConfig.from}>`
         : emailConfig.from;
 
-      this.logger.log(`Sending email to: ${validTo.join(', ')}`);
-      this.logger.debug(`From: ${from}, Subject: ${subject}`);
+      this.logger.log(`Sending email to: ${toArray.join(', ')}`);
+      this.logger.log(`From: ${from}, Subject: ${subject}`);
 
-      const result = await this.transporter.sendMail({
+      const mailOptions = {
         from,
-        to: validTo.length > 0 ? validTo.join(', ') : undefined,
-        cc: validCc.length > 0 ? validCc.join(', ') : undefined,
-        bcc: validBcc.length > 0 ? validBcc.join(', ') : undefined,
+        to: toArray.join(', '),
+        cc: ccArray.length > 0 ? ccArray.join(', ') : undefined,
+        bcc: bccArray.length > 0 ? bccArray.join(', ') : undefined,
         subject,
         text: text || html, // Fallback to HTML if no text
         html: html || text, // Fallback to text if no HTML
+      };
+
+      this.logger.debug('Mail options:', {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        hasText: !!mailOptions.text,
+        hasHtml: !!mailOptions.html,
       });
 
+      const result = await this.transporter.sendMail(mailOptions);
+
+      // Log full SMTP response for debugging
       this.logger.log(
-        `Email sent successfully to: ${validTo.join(', ')} (Message ID: ${result.messageId})`,
+        `Email sent successfully to: ${toArray.join(', ')} (Message ID: ${result.messageId})`,
       );
+      this.logger.debug('SMTP Response:', {
+        messageId: result.messageId,
+        response: result.response,
+        accepted: result.accepted,
+        rejected: result.rejected,
+        pending: result.pending,
+        envelope: result.envelope,
+      });
+
+      // Check if email was actually accepted by SMTP server
+      if (result.rejected && result.rejected.length > 0) {
+        this.logger.error(
+          `❌ Email was REJECTED by SMTP server for: ${result.rejected.join(', ')}`,
+        );
+        return false;
+      }
+
+      if (result.accepted && result.accepted.length === 0) {
+        this.logger.warn(
+          `⚠️ Email was not accepted by SMTP server (no accepted recipients)`,
+        );
+        return false;
+      }
+
       return true;
     } catch (error) {
       this.logger.error(

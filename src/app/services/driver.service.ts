@@ -11,6 +11,8 @@ import { CounterService } from './counter.service';
 import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import { DriverRegistrationTemplate } from '../templates/email/driver-registration.template';
+import { EmailQueueService } from '../../queues/email/email-queue.service';
+import { v4 as uuidv4 } from 'uuid';
 import * as crypto from "crypto";
 
 @Injectable()
@@ -25,6 +27,7 @@ export class DriverService {
     private tokenService: TokenService,
     private emailService: EmailService,
     private configService: ConfigService,
+    private readonly emailQueueService: EmailQueueService,
   ) {}
 
   async create(createDriverDto: CreateDriverDto) {
@@ -119,35 +122,30 @@ export class DriverService {
       },
     ]);
 
-    // Send welcome email to driver (non-blocking - don't fail if email fails)
+    // Enqueue welcome email to driver (non-blocking - don't fail if email queueing fails)
     try {
-      const emailConfig = this.configService.get('email');
-      const logoUrl = emailConfig?.logoUrl || 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Logo_Public.png';
+      const correlationId = uuidv4();
 
-      const emailSent = await this.emailService.sendEmail({
+      await this.emailQueueService.enqueueEmail({
+        correlationId,
         to: createdDriver.email,
         subject: DriverRegistrationTemplate.getSubject(),
-        text: DriverRegistrationTemplate.getText({
+        templateKey: 'driver_registration',
+        templateData: {
           driverName: createdDriver.fullName,
           driverCode: createdDriver.driverCode,
           passcode: plainPasscode,
-        }),
-        html: DriverRegistrationTemplate.getHtml({
-          driverName: createdDriver.fullName,
-          driverCode: createdDriver.driverCode,
-          passcode: plainPasscode,
-          logoUrl,
-        }),
+        },
       });
 
-      if (emailSent) {
-        this.logger.log(`Welcome email sent successfully to driver ${createdDriver.email}`);
-      } else {
-        this.logger.warn(`Failed to send welcome email to driver ${createdDriver.email}`);
-      }
+      this.logger.log(
+        `Welcome email job enqueued for driver ${createdDriver.email} (correlationId=${correlationId})`,
+      );
     } catch (error) {
-      // Log error but don't fail driver creation if email fails
-      this.logger.error(`Error sending welcome email to driver ${createdDriver.email}: ${error.message}`);
+      // Log error but don't fail driver creation if queueing fails
+      this.logger.error(
+        `Error enqueuing welcome email job for driver ${createdDriver.email}: ${error.message}`,
+      );
     }
 
     // Return result without passcode (excluded from create response)
@@ -234,35 +232,29 @@ export class DriverService {
       throw new NotFoundException('Driver not found after update');
     }
 
-    // Send email with new passcode (non-blocking)
+    // Send email with new passcode via queue (non-blocking)
     try {
-      const emailConfig = this.configService.get('email');
-      const logoUrl = emailConfig?.logoUrl || undefined;
+      const correlationId = uuidv4();
 
-      const emailSent = await this.emailService.sendEmail({
+      await this.emailQueueService.enqueueEmail({
+        correlationId,
         to: updatedDriver.email,
-        subject: DriverRegistrationTemplate.getSubject(),
-        text: DriverRegistrationTemplate.getText({
+        templateKey: 'driver_passcode_regenerated',
+        templateData: {
           driverName: updatedDriver.fullName,
           driverCode: updatedDriver.driverCode,
           passcode: newPasscode,
-        }),
-        html: DriverRegistrationTemplate.getHtml({
-          driverName: updatedDriver.fullName,
-          driverCode: updatedDriver.driverCode,
-          passcode: newPasscode,
-          logoUrl,
-        }),
+        },
       });
 
-      if (emailSent) {
-        this.logger.log(`Passcode regeneration email sent successfully to driver ${updatedDriver.email}`);
-      } else {
-        this.logger.warn(`Failed to send passcode regeneration email to driver ${updatedDriver.email}`);
-      }
+      this.logger.log(
+        `Passcode regeneration email job enqueued for driver ${updatedDriver.email} (correlationId=${correlationId})`,
+      );
     } catch (error) {
-      // Log error but don't fail passcode regeneration if email fails
-      this.logger.error(`Error sending passcode regeneration email to driver ${updatedDriver.email}: ${error.message}`);
+      // Log error but don't fail passcode regeneration if queueing fails
+      this.logger.error(
+        `Error enqueuing passcode regeneration email job for driver ${updatedDriver.email}: ${error.message}`,
+      );
     }
 
     return updatedDriver;
