@@ -818,6 +818,37 @@ export class DriverService {
   }
 
   /**
+   * Soft delete driver account (used by driver app "delete account")
+   * - Marks driver as deleted
+   * - Deactivates account and sets status to INACTIVE/OFFDUTY
+   * - Invalidates all tokens for this driver
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const driver = await this.driverModel.findOne({
+      _id: userId,
+      isDeleted: false,
+    }).exec();
+
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    await this.driverModel.findByIdAndUpdate(
+      userId,
+      {
+        isDeleted: true,
+        isActive: false,
+        accountStatus: AccountStatus.INACTIVE,
+        dutyStatus: DutyStatus.OFFDUTY,
+      },
+      { returnDocument: 'after' },
+    ).exec();
+
+    // Invalidate all tokens for this driver so they are logged out from all devices
+    await this.tokenService.invalidateAllUserTokens(userId);
+  }
+
+  /**
    * Validate driver credentials (phone/email + passcode)
    * Returns the driver document if valid, throws UnauthorizedException if invalid
    */
