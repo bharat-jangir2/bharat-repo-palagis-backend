@@ -1,8 +1,8 @@
-export interface DriverRegistrationTemplateData {
+export interface DriverPasscodeRegeneratedTemplateData {
   driverName: string;
   driverCode: string;
   passcode: string;
-  logoUrl?: string; // Optional logo URL - if not provided, will use text "PALAGIS"
+  logoUrl?: string; // Optional logo URL
 }
 
 /**
@@ -19,28 +19,22 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-export class DriverRegistrationTemplate {
-  static readonly SUBJECT = 'Welcome to Palagis - Your Account Has Been Registered';
+export class DriverPasscodeRegeneratedTemplate {
+  static readonly SUBJECT = 'Palagis Driver - Your Passcode Has Been Reset';
 
   static getSubject(): string {
     return this.SUBJECT;
   }
 
-  static getText(data: DriverRegistrationTemplateData): string {
+  static getText(data: DriverPasscodeRegeneratedTemplateData): string {
     return `Dear ${data.driverName},
 
-Welcome to Palagis Ice Cream Truck Fleet!
-Your driver account has been successfully created. Please use the credentials below to log in to the Driver App.
+Your driver account passcode has been successfully reset.
+Please use the credentials below to log in to the Driver App.
 
 Login Details:
 Driver Code: ${data.driverCode}
 Temporary Passcode: ${data.passcode}
-
-After installing:
-1. Open the app
-2. Log in using your credentials
-3. Enable location access
-4. Set your truck to ACTIVE when ready
 
 We're excited to have you on the road!
 
@@ -54,7 +48,7 @@ This is an automatically generated email – Please do not reply to it.
 COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
   }
 
-  static getHtml(data: DriverRegistrationTemplateData): string {
+  static getHtml(data: DriverPasscodeRegeneratedTemplateData): string {
     // Escape user input to prevent XSS
     const safeDriverName = escapeHtml(data.driverName);
     const safeDriverCode = escapeHtml(data.driverCode);
@@ -95,7 +89,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                   src="./top-image.png"
                   width="600"
                   style="display: block; width: 100%; height: auto"
-                  alt="Palagis Ice Cream"
                 />
               </td>
             </tr>
@@ -108,9 +101,7 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                   cellpadding="0"
                   cellspacing="0"
                   style="
-                    background: url('./bg-image.png');
-                    background-size: cover;
-                    background-position: center;
+                    background: url(&quot;./bg-image.png&quot;);
                     border-radius: 16px;
                     height: 200px;
                   "
@@ -123,7 +114,7 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                         font-size: 20px;
                         vertical-align: bottom;
                         padding-bottom: 28px;
-                        font-family: 'ADLaM Display', Arial;
+                        font-family: &quot;ADLaM Display&quot;, Arial;
                       "
                     >
                       <b>
@@ -151,12 +142,8 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                 </p>
 
                 <p>
-                  Welcome to
-                  <strong style="color: #040954"
-                    >Palagis Ice Cream Truck Fleet!</strong
-                  ><br />
-                  Your driver account has been successfully created. Please use
-                  the credentials below to log in to the Driver App.
+                  Your driver account passcode has been successfully reset.
+                  Please use the credentials below to log in to the Driver App.
                 </p>
               </td>
             </tr>
@@ -221,6 +208,7 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                         style="margin-right: 20px; vertical-align: middle;"
                       />
                     </td>
+                    <td></td>
                   </tr>
                 </table>
                 <p style="margin: 10px 0 0 0; font-size: 12px; color: #6b7280; text-align: center;">
@@ -229,7 +217,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
               </td>
             </tr>
 
-            <!-- App Download Section -->
             <tr>
               <td style="padding: 30px">
                 <!-- Outer Light Grey Container -->
@@ -255,7 +242,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                           margin-bottom: 12px;
                           margin-left: 10px;
                         "
-                        alt="Palagis Driver App"
                       />
 
                       <div
@@ -308,7 +294,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                                         src="./app-download.png"
                                         width="140"
                                         style="display: block; margin: 0 auto"
-                                        alt="Download on App Store"
                                       />
                                     </a>
                                   </div>
@@ -321,7 +306,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                                         src="./play-store.png"
                                         width="140"
                                         style="display: block; margin: 0 auto"
-                                        alt="Get it on Google Play"
                                       />
                                     </a>
                                   </div>
@@ -334,19 +318,6 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                     </td>
                   </tr>
                 </table>
-              </td>
-            </tr>
-
-            <!-- After Installing -->
-            <tr>
-              <td style="padding: 0 30px 20px 30px">
-                <h3 style="color: #040954">After installing:</h3>
-                <ol style="padding-left: 20px; font-size: 14px; color: #4a5565">
-                  <li>Open the app</li>
-                  <li>Log in using your credentials</li>
-                  <li>Enable location access</li>
-                  <li>Set your truck to ACTIVE when ready</li>
-                </ol>
               </td>
             </tr>
 
@@ -369,8 +340,8 @@ COPYRIGHT © 2026 Palagis Ice Cream, All Rights Reserved`;
                     href="mailto:support@palagisicecream.com"
                     style="color: #004eeb; text-decoration: underline"
                   >
-                    support@palagisicecream.com
-                  </a><br />
+                    support@palagisicecream.com </a
+                  ><br />
                   <span style="color: #040954">+1 (555) 123-4567</span>
                 </p>
               </td>

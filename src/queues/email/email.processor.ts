@@ -5,6 +5,7 @@ import { Job } from 'bullmq';
 import { SendEmailJobPayload } from '../common/job-payloads';
 import { EmailService } from '../../app/services/email.service';
 import { DriverRegistrationTemplate } from '../../app/templates/email/driver-registration.template';
+import { DriverPasscodeRegeneratedTemplate } from '../../app/templates/email/driver-passcode-regenerated.template';
 
 @Processor('emailQueue', {
   concurrency: Number(process.env.EMAIL_QUEUE_CONCURRENCY) || 15, // Increased to 15 for better throughput
@@ -118,13 +119,13 @@ export class EmailProcessor extends WorkerHost implements OnModuleInit {
       if (payload.templateKey === 'driver_passcode_regenerated') {
         const emailSent = await this.emailService.sendEmail({
           to: payload.to,
-          subject: DriverRegistrationTemplate.getSubject(), // Reuse same template
-          text: DriverRegistrationTemplate.getText({
+          subject: DriverPasscodeRegeneratedTemplate.getSubject(),
+          text: DriverPasscodeRegeneratedTemplate.getText({
             driverName: String(payload.templateData?.driverName ?? ''),
             driverCode: String(payload.templateData?.driverCode ?? ''),
             passcode: String(payload.templateData?.passcode ?? ''),
           }),
-          html: DriverRegistrationTemplate.getHtml({
+          html: DriverPasscodeRegeneratedTemplate.getHtml({
             driverName: String(payload.templateData?.driverName ?? ''),
             driverCode: String(payload.templateData?.driverCode ?? ''),
             passcode: String(payload.templateData?.passcode ?? ''),
